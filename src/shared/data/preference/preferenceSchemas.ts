@@ -1022,7 +1022,7 @@ export const DefaultPreferences: PreferenceSchemas = {
     'shortcut.chat.model.select': { binding: ['CommandOrControl', 'Shift', 'M'], enabled: true },
     'shortcut.quick_assistant.toggle': { binding: ['CommandOrControl', 'E'], enabled: false },
     'shortcut.resource.delete_permanently': { binding: ['CommandOrControl', 'Backspace'], enabled: true },
-    'shortcut.screenshot.capture': { binding: ['CommandOrControl', 'Shift', 'A'], enabled: true },
+    'shortcut.screenshot.capture': { binding: ['CommandOrControl', 'Shift', 'A'], enabled: false },
     'shortcut.selection.capture_text': { binding: [], enabled: false },
     'shortcut.selection.toggle': { binding: [], enabled: false },
     'shortcut.tab.close': { binding: ['CommandOrControl', 'W'], enabled: true },

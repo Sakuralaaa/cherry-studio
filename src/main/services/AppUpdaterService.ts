@@ -394,8 +394,9 @@ export class AppUpdaterService extends BaseService {
     }
   }
 
+  // Lite fork: never contact the upstream update feed; updates are installed manually.
   private isPortable(): boolean {
-    return isWin && 'PORTABLE_EXECUTABLE_DIR' in process.env
+    return true
   }
 
   /**

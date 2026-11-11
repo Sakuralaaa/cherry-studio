@@ -55,7 +55,8 @@ function consentGranted(): boolean {
 }
 
 export function initSentry(): void {
-  if (import.meta.env.DEV) return
+  // Lite fork: crash reporting to the upstream Sentry project is disabled.
+  if (import.meta.env.DEV || __APP_EDITION__) return
   const buildContext = getSentryBuildContext(name, version, __APP_EDITION__)
 
   Sentry.init({

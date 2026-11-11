@@ -1,10 +1,10 @@
-import { LATEST_PRIVACY_POLICY_VERSION } from '@shared/utils/constants'
-
 /**
  * Whether the user consented to data collection **under the current policy**.
  * Every uploader (analytics, crash reporting) must gate on this one predicate so
  * a policy bump revokes them all together.
+ *
+ * Lite fork: telemetry and crash reporting are permanently disabled.
  */
-export function isDataCollectionConsented(enabled: boolean, policyVersion: string): boolean {
-  return enabled && policyVersion === LATEST_PRIVACY_POLICY_VERSION
+export function isDataCollectionConsented(_enabled: boolean, _policyVersion: string): boolean {
+  return false
 }

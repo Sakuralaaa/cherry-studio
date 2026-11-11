@@ -1,3 +1,5 @@
+> **Cherry Studio Lite** — 这是 [CherryHQ/cherry-studio](https://github.com/CherryHQ/cherry-studio) 的个人精简分支，仅保留对话与模型管理，Windows x64 安装包由 GitHub Actions 自动构建，见 Releases。原项目版权归 CherryHQ 及其贡献者所有，本分支同样以 AGPL-3.0 发布。修改计划见 [LITE_PLAN.md](LITE_PLAN.md)。
+
 
 <h1 align="center">
   <a href="https://github.com/CherryHQ/cherry-studio/releases">

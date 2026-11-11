@@ -85,10 +85,6 @@ export class CommandService extends BaseService {
       openSettingsInMainWindow()
     })
 
-    this.registerHandler('quick_assistant.toggle', () => {
-      application.get('QuickAssistantService').toggleQuickAssistant()
-    })
-
     this.registerHandler('app.zoom.in', (window) => {
       handleZoomFactor(getCommandTargetWindows(window), 0.1)
     })
@@ -100,17 +96,6 @@ export class CommandService extends BaseService {
     this.registerHandler('app.zoom.reset', (window) => {
       handleZoomFactor(getCommandTargetWindows(window), 0, true)
     })
-
-    this.registerHandler('selection.toggle', () => {
-      application.get('SelectionService').toggleEnabled()
-    })
-
-    this.registerHandler('selection.capture_text', () => {
-      application.get('SelectionService').processSelectTextByShortcut()
-    })
-
-    // Returns the promise so execute() can log a rejection instead of dropping it.
-    this.registerHandler('screenshot.capture', () => application.get('ScreenshotChatService').startCapture())
   }
 
   private getDefaultContext(): ContextReader {

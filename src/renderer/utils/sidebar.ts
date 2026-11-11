@@ -136,7 +136,12 @@ export function tabBelongsToApp(app: SidebarApp, url: string): boolean {
  * 侧边栏支持的完整菜单顺序。
  * Preference 默认值可能不包含新菜单，管理态列表仍需要覆盖当前全部支持项。
  */
-export const SIDEBAR_FAVORITE_ORDER: SidebarAppId[] = SIDEBAR_APPS.map((app) => app.id)
+// Lite edition: only conversation apps can be pinned or shown; the registry itself stays intact.
+const LITE_SIDEBAR_APP_IDS: ReadonlySet<SidebarAppId> = new Set<SidebarAppId>(['assistants'])
+
+export const SIDEBAR_FAVORITE_ORDER: SidebarAppId[] = SIDEBAR_APPS.map((app) => app.id).filter((id) =>
+  LITE_SIDEBAR_APP_IDS.has(id)
+)
 
 const sidebarFavoriteSet = new Set<SidebarAppId>(SIDEBAR_FAVORITE_ORDER)
 

@@ -39,8 +39,8 @@ function createLaunchpadFallbackTab(): Tab {
   return {
     id: uuid(),
     type: 'route',
-    url: '/app/launchpad',
-    title: getDefaultRouteTitle('/app/launchpad'),
+    url: '/app/chat',
+    title: getDefaultRouteTitle('/app/chat'),
     lastAccessTime: Date.now(),
     isDormant: false
   }
