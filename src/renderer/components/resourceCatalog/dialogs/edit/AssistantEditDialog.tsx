@@ -248,7 +248,8 @@ function AssistantEditDialogContent({
         id: 'tools',
         label: t('library.config.dialogs.edit.tools_tab'),
         children: [
-          { id: 'tools.builtin', label: t('settings.skills.tabs.builtin') }
+          { id: 'tools.builtin', label: t('settings.skills.tabs.builtin') },
+          { id: 'tools.knowledge', label: t('library.config.dialogs.edit.knowledge_tab') }
         ]
       }
     ],

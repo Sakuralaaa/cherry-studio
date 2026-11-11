@@ -1,0 +1,57 @@
+name: Lite Screenshots
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lite-screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screenshots:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: ".node-version"
+      - uses: pnpm/action-setup@v5
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-
+      - name: Install dependencies
+        run: pnpm install
+      - name: Rebuild native modules for Electron
+        run: pnpm rebuild:electron
+      - name: Build app
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+        run: |
+          pnpm exec dotenv -v CHERRY_EDITION=global -- electron-vite build
+          pnpm run build:utility-process
+      - name: Capture screenshots
+        continue-on-error: true
+        env:
+          CI: "true"
+        run: pnpm exec playwright test liteScreenshots --retries=0
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lite-screenshots
+          path: test-results/**/*.png
+          if-no-files-found: warn
