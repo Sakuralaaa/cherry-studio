@@ -6,7 +6,7 @@ import type { ComponentProps } from 'react'
 import { I18nextProvider } from 'react-i18next'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ThreadContextUsage } from '@cherrystudio/agent-runtime'
+import type { ThreadContextUsage } from '@shared/ai/agentSessionContextUsage'
 import de from '@renderer/i18n/locales/de-de.json'
 import en from '@renderer/i18n/locales/en-us.json'
 

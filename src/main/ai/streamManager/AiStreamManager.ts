@@ -45,7 +45,6 @@ import type { ReasoningEffortOption } from '@shared/types/aiSdk'
 import type { SerializedError } from '@shared/types/error'
 import { KeyedMutex } from '@shared/utils/async'
 
-import { extractAgentSessionId, isAgentSessionTopic } from '../agentSession/topic'
 import type { AsInProcess } from '../AiService'
 import { applyTurnOutputAttributes } from '../observability'
 import type {
@@ -1073,7 +1072,7 @@ export class AiStreamManager extends BaseService {
     const existing = this.activeStreams.get(input.topicId)
     const carriedListeners = existing
       ? [...existing.listeners.values()].filter(
-          (listener) => !listener.id.startsWith('persistence:') && !listener.id.startsWith('agent-runtime:')
+          (listener) => !listener.id.startsWith('persistence:')
         )
       : []
 
@@ -1106,7 +1105,7 @@ export class AiStreamManager extends BaseService {
     if (!stream || !isLiveStatus(stream.status)) return
 
     for (const id of stream.listeners.keys()) {
-      if (id.startsWith('persistence:') || id.startsWith('agent-runtime:')) {
+      if (id.startsWith('persistence:')) {
         stream.listeners.delete(id)
       }
     }
@@ -1361,9 +1360,6 @@ export class AiStreamManager extends BaseService {
   abort(topicId: string, reason: string): void {
     const stream = this.activeStreams.get(topicId)
     if (!stream || !isLiveStatus(stream.status)) {
-      if (isAgentSessionTopic(topicId)) {
-        application.get('AgentSessionRuntimeService').abortPendingTurn(extractAgentSessionId(topicId), reason)
-      }
       return
     }
     logger.info('Aborting stream', { topicId, reason })
@@ -1385,35 +1381,10 @@ export class AiStreamManager extends BaseService {
       beforeAbort?.()
       const stream = this.activeStreams.get(topicId)
       const loopPromises = stream ? [...stream.executions.values()].map((execution) => execution.loopPromise) : []
-      const drainedLoops = new Set(loopPromises)
 
       this.abort(topicId, reason)
       await Promise.allSettled(loopPromises)
 
-      if (isAgentSessionTopic(topicId)) {
-        const runtimeClosing = application
-          .get('AgentSessionRuntimeService')
-          .closeSession(extractAgentSessionId(topicId))
-        const drainReplacementLoops = async (): Promise<void> => {
-          for (;;) {
-            const replacement = this.activeStreams.get(topicId)
-            const replacementLoops = replacement
-              ? [...replacement.executions.values()]
-                  .map((execution) => execution.loopPromise)
-                  .filter((loopPromise) => !drainedLoops.has(loopPromise))
-              : []
-            if (replacementLoops.length === 0) return
-
-            replacementLoops.forEach((loopPromise) => drainedLoops.add(loopPromise))
-            this.abort(topicId, reason)
-            await Promise.allSettled(replacementLoops)
-          }
-        }
-
-        await drainReplacementLoops()
-        await runtimeClosing
-        await drainReplacementLoops()
-      }
     })
   }
 
@@ -1572,13 +1543,7 @@ export class AiStreamManager extends BaseService {
     // when the runtime will continue this topic, keep the stream alive so the next turn reaches the
     // carried renderer listeners, but let the runtime drive the continuation.
     const chatChaining = stream.status === 'done' && this.hasPendingSteer(topicId)
-    const agentChaining =
-      topicDone &&
-      !chatChaining &&
-      stream.status === 'done' &&
-      isAgentSessionTopic(topicId) &&
-      application.get('AgentSessionRuntimeService').willContinueTopic(topicId)
-    const chaining = chatChaining || agentChaining
+    const chaining = chatChaining
 
     if (topicDone && stream.status === 'done' && stream.isPersistentConversation) {
       const tasks = this.completedBatchTasks.get(topicId) ?? new Set<string>()

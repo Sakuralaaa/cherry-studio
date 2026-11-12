@@ -344,27 +344,18 @@ class BackupManager {
       logger.debug('[backupDirect] Capturing v2 backup resources')
 
       const quiesceReason = 'backup: capture consistent snapshot'
-      const agentLifecycle = application.get('AgentLifecycleService')
-      const ingressHold = agentLifecycle.pauseIngress(quiesceReason)
+      const ingressHold = { dispose() {} }
       try {
-        const ingressVerdict = await agentLifecycle.drainIngress({ timeoutMs: QUIESCE_TIMEOUT_MS })
-        signal?.throwIfAborted()
-        this.assertWritersDrained([ingressVerdict])
 
         const aiStreamManager = application.get('AiStreamManager')
         const jobManager = application.get('JobManager')
-        const agentJobs = application.get('AgentJobsService')
         const writerHolds: Array<{ dispose(): void }> = []
         try {
           writerHolds.push(aiStreamManager.pause(quiesceReason))
-          writerHolds.push(agentLifecycle.pauseExecution(quiesceReason))
-          writerHolds.push(agentJobs.pause(quiesceReason))
           writerHolds.push(jobManager.pause(quiesceReason))
 
           const writerVerdicts = await Promise.all([
-            agentJobs.drainInFlight({ timeoutMs: QUIESCE_TIMEOUT_MS }),
             aiStreamManager.drainInFlight({ timeoutMs: QUIESCE_TIMEOUT_MS }),
-            agentLifecycle.drainInFlight({ timeoutMs: QUIESCE_TIMEOUT_MS }),
             jobManager.drainInFlight({ timeoutMs: QUIESCE_TIMEOUT_MS })
           ])
           signal?.throwIfAborted()
@@ -924,26 +915,17 @@ class BackupManager {
       this.fsyncTree(stagingRoot)
 
       const jobManager = application.get('JobManager')
-      const agentJobs = application.get('AgentJobsService')
-      const heartbeatHold = agentJobs.pause('backup restore: stage promotion journal')
+      const heartbeatHold = { dispose() {} }
       const quiesceHold = jobManager.pause('backup restore: stage promotion journal')
-      const agentLifecycle = application.get('AgentLifecycleService')
-      const agentIngressHold = agentLifecycle.pauseIngress('backup restore')
+      const agentIngressHold = { dispose() {} }
       const writerHolds: Array<{ dispose(): void }> = []
       try {
-        const [heartbeatVerdict] = await Promise.all([
-          agentJobs.drainInFlight({ timeoutMs: QUIESCE_TIMEOUT_MS }),
-          this.assertJobsDrained(jobManager)
-        ])
-        this.assertWritersDrained([heartbeatVerdict])
-        this.assertWritersDrained([await agentLifecycle.drainIngress({ timeoutMs: QUIESCE_TIMEOUT_MS })])
+        await this.assertJobsDrained(jobManager)
         const aiStreamManager = application.get('AiStreamManager')
         writerHolds.push(aiStreamManager.pause('backup restore'))
-        writerHolds.push(agentLifecycle.pauseExecution('backup restore'))
         this.assertWritersDrained(
           await Promise.all([
-            aiStreamManager.drainInFlight({ timeoutMs: QUIESCE_TIMEOUT_MS }),
-            agentLifecycle.drainInFlight({ timeoutMs: QUIESCE_TIMEOUT_MS })
+            aiStreamManager.drainInFlight({ timeoutMs: QUIESCE_TIMEOUT_MS })
           ])
         )
         this.assertNoActiveDataWriters()
@@ -1424,8 +1406,7 @@ class BackupManager {
 
   private assertNoActiveDataWriters(): void {
     if (
-      application.get('AiStreamManager').hasLiveStreams() ||
-      application.get('AgentLifecycleService').listActiveWork().length > 0
+      application.get('AiStreamManager').hasLiveStreams()
     ) {
       throw new BackupActiveWritersError()
     }

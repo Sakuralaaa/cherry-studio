@@ -2,36 +2,16 @@ import { randomUUID } from 'node:crypto'
 
 import { application } from '@application'
 import { AgentSessionEditError } from '@data/services/AgentSessionEditError'
-import { AgentSessionForkSourceError } from '@data/services/AgentSessionForkService'
-import { agentSessionService } from '@data/services/AgentSessionService'
 import { temporaryChatService } from '@data/services/TemporaryChatService'
-import { loggerService } from '@logger'
-import { AgentSessionArchiveBusyError } from '@main/ai/agents/AgentLifecycleService'
-import { agentWorkspaceStorageService } from '@main/ai/agents/AgentWorkspaceStorageService'
-import { createAgent } from '@main/ai/agents/createAgent'
-import { createBuiltinAssistantSession } from '@main/ai/agents/createBuiltinAssistantSession'
-import { createBuiltinSkillSession } from '@main/ai/agents/createBuiltinSkillSession'
-import { createBuiltinSupportSession } from '@main/ai/agents/createBuiltinSupportSession'
-import { buildAgentSessionTopicId } from '@main/ai/agentSession/topic'
 import { findPersistedToolOutput } from '@main/ai/messages/persistedToolOutput'
-import { AgentSessionForkError } from '@main/ai/runtime/fork'
 import { AiStreamAdmissionError, type MainDispatchRequest } from '@main/ai/streamManager'
-import { openRequestPath } from '@main/services/file'
-import { PathStaleVersionError } from '@main/utils/file'
-import { isAgentSessionForkFailureReason } from '@shared/ai/agentSessionFork'
 import type { MessageProjectionUpdate } from '@shared/ai/messageProjection'
-import { ErrorCode, isDataApiError, isDataApiResourceNotFoundError } from '@shared/data/api/errors'
-import { JOB_ERROR_CODES } from '@shared/data/api/schemas/jobs'
 import { aiErrorCodes } from '@shared/ipc/errors/ai'
-import { fileErrorCodes } from '@shared/ipc/errors/file'
 import { IpcError } from '@shared/ipc/errors/IpcError'
 import type { aiRequestSchemas } from '@shared/ipc/schemas/ai'
 import type { IpcHandlersFor, WindowId } from '@shared/ipc/types'
-import { AbsoluteFilePathSchema } from '@shared/types/file'
 
 import { exposeAiError } from './exposeAiError'
-
-const logger = loggerService.withContext('ipc/ai')
 
 async function exposeAiStreamAdmission<T>(op: () => Promise<T>): Promise<T> {
   try {
@@ -59,80 +39,32 @@ function senderWebContents(senderId: WindowId | null): Electron.WebContents | un
 }
 
 /**
- * Domain → transport translation for `ai.agent.task.*` commands. The internal
- * `JOB_SCHEDULE_TRIGGER_INVALID` (a user input error the form must branch on)
- * becomes the AI-domain `AI_AGENT_TASK_TRIGGER_INVALID` IpcError — without this
- * `IpcError.from` would normalize the coded Error to `INTERNAL` and the
- * renderer would lose its branching key. Everything else rethrows untouched.
+ * Cherry Studio Lite: the agent feature (agent runtimes, sessions, scheduled tasks,
+ * Claude Code binary) is removed. The IPC routes stay declared so the shared contract
+ * is unchanged, but every agent route rejects.
  */
-async function exposeAgentTaskError<T>(op: () => T | Promise<T>): Promise<T> {
-  try {
-    return await op()
-  } catch (e) {
-    if (e instanceof Error && (e as { code?: string }).code === JOB_ERROR_CODES.SCHEDULE_TRIGGER_INVALID) {
-      throw new IpcError(aiErrorCodes.AI_AGENT_TASK_TRIGGER_INVALID, e.message)
-    }
-    throw e
-  }
-}
-
-function agentTaskNotFound(taskId: string): IpcError {
-  return new IpcError(aiErrorCodes.AI_AGENT_TASK_NOT_FOUND, `Task not found: ${taskId}`)
-}
-
-async function restoreAgentSession(sessionId: string) {
-  try {
-    return await application.get('AgentLifecycleService').restoreSession(sessionId)
-  } catch (e) {
-    if (isDataApiError(e) && e.code === ErrorCode.NOT_FOUND) {
-      throw new IpcError(aiErrorCodes.AI_AGENT_SESSION_NOT_FOUND, e.message)
-    }
-    throw e
-  }
-}
-
-async function exposeAgentSessionArchiveError<T>(operation: () => T | Promise<T>): Promise<T> {
-  try {
-    return await operation()
-  } catch (error) {
-    if (error instanceof AgentSessionArchiveBusyError) {
-      throw new IpcError(aiErrorCodes.AI_AGENT_SESSION_ARCHIVE_BUSY, error.message, {
-        sessionIds: error.sessionIds
-      })
-    }
-    if (isDataApiError(error) && error.code === ErrorCode.INVALID_OPERATION) {
-      const operation = (error.details as { operation?: string } | undefined)?.operation
-      if (operation === 'delete pinned session') {
-        throw new IpcError(aiErrorCodes.AI_AGENT_SESSION_PINNED, error.message)
-      }
-    }
-    throw error
-  }
+function agentsUnavailable(): never {
+  throw new Error('Agents are not available in Cherry Studio Lite')
 }
 
 export const aiHandlers: IpcHandlersFor<typeof aiRequestSchemas> = {
   'ai.projection.attach': ({ target, subscriptionId }, { senderId }) => {
     const sender = senderWebContents(senderId)
     if (!sender || senderId === null) throw new Error('Projection subscription requires a window')
+    if (target.kind !== 'topic') agentsUnavailable()
     const send = (update: MessageProjectionUpdate) =>
       application.get('IpcApiService').send(senderId, 'ai.projection.changed', { subscriptionId, update })
-    return target.kind === 'topic'
-      ? application.get('AiStreamManager').attachProjection(sender, target.topicId, subscriptionId, send)
-      : application
-          .get('AgentSessionRuntimeService')
-          .attachChild(sender, target.sessionId, target.toolCallId, subscriptionId, send)
+    return application.get('AiStreamManager').attachProjection(sender, target.topicId, subscriptionId, send)
   },
   'ai.projection.detach': async ({ target, subscriptionId }, { senderId }) => {
     const sender = senderWebContents(senderId)
     if (!sender) return
     if (target.kind === 'topic') application.get('AiStreamManager').detachProjection(sender, subscriptionId)
-    else application.get('AgentSessionRuntimeService').detachChild(sender, subscriptionId)
   },
-  'ai.agent.child.message': ({ sessionId, contextId, text }) =>
-    application.get('AgentSessionRuntimeService').messageChild(sessionId, contextId, text),
-  'ai.claude_code.binary.status': async () => application.get('ClaudeCodeBinaryService').getStatus(),
-  'ai.claude_code.binary.ensure': async () => application.get('ClaudeCodeBinaryService').ensure(),
-  'ai.claude_code.binary.retry': async () => application.get('ClaudeCodeBinaryService').ensure(true),
+  'ai.agent.child.message': agentsUnavailable,
+  'ai.claude_code.binary.status': agentsUnavailable,
+  'ai.claude_code.binary.ensure': agentsUnavailable,
+  'ai.claude_code.binary.retry': agentsUnavailable,
   // ── One-shot model calls — AiService owns the provider clients. ──
   // A renderer one-shot call has no topic; it is its own conversation.
   'ai.text.generate': ({ requestId, ...request }) => {
@@ -193,168 +125,40 @@ export const aiHandlers: IpcHandlersFor<typeof aiRequestSchemas> = {
   'ai.tool.respond_approval': (payload, { senderId }) =>
     application.get('AiService').respondToolApproval(payload, senderWebContents(senderId)),
 
-  // ── Agent creation + session warm-connection lifecycle. ──
-  'ai.agent.create': createAgent,
-  'ai.agent.restore': async ({ agentId }) => {
-    try {
-      return await application.get('AgentLifecycleService').restoreAgent(agentId)
-    } catch (error) {
-      if (isDataApiError(error) && error.code === ErrorCode.NOT_FOUND) {
-        throw new IpcError(aiErrorCodes.AI_AGENT_NOT_FOUND, error.message)
-      }
-      throw error
-    }
-  },
-  'ai.agent.delete': ({ agentId, deleteSessions, permanent }) =>
-    exposeAgentSessionArchiveError(() =>
-      permanent
-        ? application.get('AgentLifecycleService').purgeAgent(agentId)
-        : application.get('AgentLifecycleService').archiveAgent(agentId, { archiveSessions: deleteSessions })
-    ),
-  'ai.agent.delete_permanently': ({ agentId, deleteSessions }) =>
-    exposeAgentSessionArchiveError(() =>
-      application.get('AgentLifecycleService').deleteActiveAgentPermanently(agentId, deleteSessions)
-    ),
-  'ai.agent.attachment_selections.list': ({ sessionId }) =>
-    application.get('AttachmentPresenceService').list(sessionId),
-  'ai.agent.sessions.delete': ({ agentId }) =>
-    exposeAgentSessionArchiveError(() => application.get('AgentLifecycleService').archiveAgentSessions(agentId)),
-  'ai.agent.support_session.create': async () => ({ sessionId: createBuiltinSupportSession().id }),
-  'ai.agent.assistant_session.create': async ({ workspace }) => {
-    try {
-      return { sessionId: createBuiltinAssistantSession(workspace).id }
-    } catch (error) {
-      if (isDataApiResourceNotFoundError(error, 'Workspace')) {
-        throw new IpcError(aiErrorCodes.AI_AGENT_WORKSPACE_NOT_FOUND, error.message)
-      }
-      throw error
-    }
-  },
-  'ai.agent.skill_session.create': async ({ skillId }) => ({ sessionId: createBuiltinSkillSession(skillId).id }),
-  // Warm-lease acquire: opens the live connection eagerly (not just a warm-query park) so the
-  // session's slash-command catalog is read into the cache before the first message — the
-  // warm-query handle can't expose it. Trace mode is no exception: the primed connection resolves
-  // the session's container trace up front and spawns with TRACEPARENT, and the one thing a traced
-  // turn must not reuse — a trace-less warm query — is refused by the driver itself.
-  // The per-session connection is shared across windows, so the runtime service aggregates leases
-  // by (session × sender WebContents) and tears down only once no window holds the session.
-  'ai.agent.session.prewarm': async ({ sessionId }, { senderId }) => {
-    application.get('AgentSessionRuntimeService').acquireWarmLease(sessionId, senderWebContents(senderId))
-  },
-  'ai.agent.session.close_warm': async ({ sessionId }, { senderId }) => {
-    application.get('AgentSessionRuntimeService').releaseWarmLease(sessionId, senderWebContents(senderId))
-  },
-  'ai.agent.session.delete': ({ sessionIds, permanent }) =>
-    exposeAgentSessionArchiveError(() =>
-      permanent
-        ? application.get('AgentLifecycleService').purgeSessions(sessionIds)
-        : application.get('AgentLifecycleService').archiveSessions(sessionIds)
-    ),
-  'ai.agent.session.restore': ({ sessionId }) => restoreAgentSession(sessionId),
-  'ai.agent.session.delete_permanently': ({ sessionIds }) =>
-    exposeAgentSessionArchiveError(() =>
-      application.get('AgentLifecycleService').deleteActiveSessionsPermanently(sessionIds)
-    ),
-  'ai.agent.session.reuse_or_create': (input) => application.get('AgentLifecycleService').reuseOrCreateSession(input),
-  'ai.agent.session.fork': async ({ sourceSessionId, messageId }) => {
-    try {
-      return {
-        sessionId: await application.get('AgentSessionRuntimeService').forkSession(sourceSessionId, messageId)
-      }
-    } catch (error) {
-      logger.warn('Agent session fork failed', { sourceSessionId, messageId, error })
-      const failure =
-        error instanceof AgentSessionForkError || error instanceof AgentSessionForkSourceError
-          ? error.reason
-          : undefined
-      const reason = isAgentSessionForkFailureReason(failure) ? failure : 'operation_failed'
-      throw new IpcError(aiErrorCodes.AI_AGENT_SESSION_FORK_FAILED, reason, { reason })
-    }
-  },
-  'ai.agent.workspace.register': async ({ path, name }) =>
-    agentWorkspaceStorageService.registerWorkspace(path, { name }),
-  'ai.agent.workspace.delete': ({ workspaceId }) =>
-    application.get('AgentLifecycleService').deleteWorkspace(workspaceId),
-
-  'ai.agent.session.edit_target': ({ sessionId, messageId }) =>
-    exposeAiStreamAdmission(() => application.get('AgentSessionRuntimeService').getEditTarget(sessionId, messageId)),
-  'ai.agent.session.set_pending_input_count': async ({ sessionId, count }, { senderId }) => {
-    const wc = senderWebContents(senderId)
-    if (!wc) return
-    application.get('AgentSessionRuntimeService').setPendingInputCount(wc, sessionId, count)
-  },
-  'ai.agent.session.edit_resend': ({ sessionId, target, ...input }, { senderId }) =>
-    exposeAiStreamAdmission(async () => {
-      const wc = senderWebContents(senderId)
-      if (!senderId || !wc) throw new Error('Edit and resend requires a managed window')
-      try {
-        return await application.get('AiStreamManager').dispatchCommand({
-          ...input,
-          trigger: 'edit-agent-message',
-          topicId: buildAgentSessionTopicId(sessionId),
-          editTarget: target,
-          interactionWindowId: senderId
-        })
-      } catch (error) {
-        if (error instanceof AgentSessionForkError) {
-          if (error.reason === 'unsupported_checkpoint') {
-            throw new AgentSessionEditError('checkpoint_unsupported')
-          }
-          const reason = isAgentSessionForkFailureReason(error.reason) ? error.reason : 'operation_failed'
-          throw new IpcError(aiErrorCodes.AI_AGENT_SESSION_FORK_FAILED, reason, { reason })
-        }
-        throw error
-      }
-    }),
-
-  // ── Agent session runtime queries & commands. ──
-  'ai.agent.session.refresh_context_usage': async ({ sessionId }) => {
-    application.get('AgentSessionRuntimeService').refreshContextUsageOnDemand(sessionId)
-  },
-  'ai.agent.session.stop_background_task': ({ sessionId, taskId }) =>
-    application.get('AgentSessionRuntimeService').stopBackgroundTask(sessionId, taskId),
-  'ai.agent.session.open_path': async ({ sessionId, path }) => {
-    const workspacePath = agentSessionService.getById(sessionId).workspace.path
-    await openRequestPath(path, AbsoluteFilePathSchema.safeParse(workspacePath).data)
-  },
-
-  // ── Agent scheduled-task commands — thin delegation to the owning AgentJobsService. ──
-  'ai.agent.heartbeat.read': ({ agentId }) => application.get('AgentJobsService').readHeartbeatDocument(agentId),
-  'ai.agent.heartbeat.write': async ({ agentId, ...document }) => {
-    try {
-      return await application.get('AgentJobsService').writeHeartbeatDocument(agentId, document)
-    } catch (error) {
-      if (error instanceof PathStaleVersionError) throw new IpcError(fileErrorCodes.STALE_VERSION, error.message)
-      throw error
-    }
-  },
-  'ai.agent.heartbeat.run': ({ agentId }) => application.get('AgentJobsService').runHeartbeat(agentId),
-  'ai.agent.task.create': ({ agentId, ...form }) =>
-    exposeAgentTaskError(() => application.get('AgentJobsService').createTask(agentId, form)),
-  'ai.agent.task.update': ({ agentId, taskId, patch }) =>
-    exposeAgentTaskError(async () => {
-      const updated = application.get('AgentJobsService').updateTask(agentId, taskId, patch)
-      if (!updated) throw agentTaskNotFound(taskId)
-      return updated
-    }),
-  'ai.agent.task.pause': async ({ agentId, taskId }) => {
-    const paused = await application.get('AgentJobsService').pauseTask(agentId, taskId)
-    if (!paused) throw agentTaskNotFound(taskId)
-    return paused
-  },
-  'ai.agent.task.resume': async ({ agentId, taskId }) => {
-    const resumed = application.get('AgentJobsService').resumeTask(agentId, taskId)
-    if (!resumed) throw agentTaskNotFound(taskId)
-    return resumed
-  },
-  'ai.agent.task.delete': async ({ agentId, taskId }) => {
-    const deleted = await application.get('AgentJobsService').deleteTask(agentId, taskId)
-    if (!deleted) throw agentTaskNotFound(taskId)
-  },
-  'ai.agent.task.run': async ({ agentId, taskId }) => {
-    const fired = await application.get('AgentJobsService').runTask(agentId, taskId)
-    if (!fired) throw agentTaskNotFound(taskId)
-  },
+  // ── Agent routes — removed in Cherry Studio Lite. ──
+  'ai.agent.create': agentsUnavailable,
+  'ai.agent.restore': agentsUnavailable,
+  'ai.agent.delete': agentsUnavailable,
+  'ai.agent.delete_permanently': agentsUnavailable,
+  'ai.agent.attachment_selections.list': agentsUnavailable,
+  'ai.agent.sessions.delete': agentsUnavailable,
+  'ai.agent.support_session.create': agentsUnavailable,
+  'ai.agent.assistant_session.create': agentsUnavailable,
+  'ai.agent.skill_session.create': agentsUnavailable,
+  'ai.agent.session.prewarm': async () => {},
+  'ai.agent.session.close_warm': async () => {},
+  'ai.agent.session.delete': agentsUnavailable,
+  'ai.agent.session.restore': agentsUnavailable,
+  'ai.agent.session.delete_permanently': agentsUnavailable,
+  'ai.agent.session.reuse_or_create': agentsUnavailable,
+  'ai.agent.session.fork': agentsUnavailable,
+  'ai.agent.workspace.register': agentsUnavailable,
+  'ai.agent.workspace.delete': agentsUnavailable,
+  'ai.agent.session.edit_target': agentsUnavailable,
+  'ai.agent.session.set_pending_input_count': async () => {},
+  'ai.agent.session.edit_resend': agentsUnavailable,
+  'ai.agent.session.refresh_context_usage': async () => {},
+  'ai.agent.session.stop_background_task': agentsUnavailable,
+  'ai.agent.session.open_path': agentsUnavailable,
+  'ai.agent.heartbeat.read': agentsUnavailable,
+  'ai.agent.heartbeat.write': agentsUnavailable,
+  'ai.agent.heartbeat.run': agentsUnavailable,
+  'ai.agent.task.create': agentsUnavailable,
+  'ai.agent.task.update': agentsUnavailable,
+  'ai.agent.task.pause': agentsUnavailable,
+  'ai.agent.task.resume': agentsUnavailable,
+  'ai.agent.task.delete': agentsUnavailable,
+  'ai.agent.task.run': agentsUnavailable,
   'ai.temporary_topic.create': async (dto) => temporaryChatService.createTopic(dto),
   'ai.temporary_topic.delete': async ({ id }) => {
     temporaryChatService.deleteTopic(id)

@@ -1,4 +1,11 @@
-import type { SlashCommand } from '@anthropic-ai/claude-agent-sdk'
+/** Shape of a Claude Agent SDK slash command (SDK removed in Cherry Studio Lite). */
+export interface SlashCommand {
+  name: string
+  description: string
+  argumentHint: string
+  aliases?: string[]
+  builtin?: boolean
+}
 
 // The driver returns SDK slash-command entries after excluding commands owned by Cherry's composer
 // UI. Keep the SDK type rather than hand-mirroring it so shape changes surface at compile time.

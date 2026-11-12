@@ -559,14 +559,6 @@ export class CherryCloudService extends BaseService {
       this.emitStatus()
       this.settleAuthorization(pending.operation, { outcome: 'signed-in', status: this.currentStatus() })
       application.get('MainWindowService').showMainWindow()
-      void application
-        .get('ApiGatewayService')
-        .start()
-        .catch((error) => {
-          logger.warn('API Gateway did not start after Cherry Cloud login', {
-            reason: error instanceof Error ? error.message : String(error)
-          })
-        })
       void this.syncEntitledModels().catch(() => undefined)
     } catch (error) {
       this.clearPendingAuthorization(pending, null)

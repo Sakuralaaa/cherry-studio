@@ -54,20 +54,6 @@ const PURGE_DOMAINS: ReadonlyArray<{
     }
   },
   {
-    name: 'session',
-    purgeExpired: async (cutoffMs, limit) => {
-      const batch = await application.get('AgentLifecycleService').purgeExpiredSessions(cutoffMs, limit)
-      return completedPurgeBatch(batch.purgedIds, batch.hasMore, () => {})
-    }
-  },
-  {
-    name: 'agent',
-    purgeExpired: async (cutoffMs, limit) => {
-      const batch = await application.get('AgentLifecycleService').purgeExpiredAgents(cutoffMs, limit)
-      return completedPurgeBatch(batch.purgedIds, batch.hasMore, () => {})
-    }
-  },
-  {
     name: 'assistant',
     purgeExpired: (cutoffMs, limit) => {
       const purgedIds = application
@@ -152,7 +138,6 @@ export const trashPurgeJobHandler: JobHandlerFor<'trash.purge'> = {
     // Schedule reconciliation strictly AFTER all transactions committed. It runs even
     // when retention is disabled so an interrupted event cleanup heals on the next pass.
     ctx.signal.throwIfAborted()
-    await application.get('AgentLifecycleService').reconcile()
     ctx.reportProgress(Math.round(((PURGE_DOMAINS.length + 1) / totalSteps) * 100))
 
     // Filesystem reclamation strictly AFTER all transactions committed.
@@ -181,18 +166,6 @@ export const trashPurgeJobHandler: JobHandlerFor<'trash.purge'> = {
     ctx.reportProgress(Math.round(((PURGE_DOMAINS.length + 2) / totalSteps) * 100))
 
     ctx.signal.throwIfAborted()
-    try {
-      const { failedDrivers } = await application.get('AgentLifecycleService').sweepOrphans(ctx.signal)
-      if (failedDrivers.length > 0) {
-        reclaimed = false
-        logger.warn('Agent orphan sweep left runtime residue', { failedDrivers })
-      }
-    } catch (error) {
-      // A cancel is not residue — let it surface so the job settles as cancelled.
-      if (ctx.signal.aborted) throw error
-      reclaimed = false
-      logger.warn('Agent orphan sweep failed — residue retried next purge run', { error })
-    }
     ctx.reportProgress(100)
 
     logger.info('Trash purge complete', {

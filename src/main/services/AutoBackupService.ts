@@ -65,9 +65,7 @@ const createScheduleState = (): ScheduleState => ({
 @DependsOn([
   'SchedulerService',
   'WindowManager',
-  'ChannelManager',
   'AiStreamManager',
-  'AgentSessionRuntimeService',
   'JobManager',
   'NotificationService'
 ])

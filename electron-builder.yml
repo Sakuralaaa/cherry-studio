@@ -21,7 +21,6 @@ protocols:
       - cherrystudio
 files:
   - "**/*"
-  - "!**/node_modules/@anthropic-ai/claude-agent-sdk-*/**" # ClaudeCodeBinaryService downloads the native runtime on demand
   - "!**/{.vscode,.yarn,.yarn-lock,.github,.cursorrules,.prettierrc}"
   - "!electron.vite.config.{js,ts,mjs,cjs}}"
   - "!electron-builder.cn.config.cjs"
@@ -64,7 +63,6 @@ files:
   - "!node_modules/mammoth/{mammoth.browser.js,mammoth.browser.min.js}"
   - "!**/node_modules/better-sqlite3/{bin,deps,src}/**"
   - "!**/node_modules/better-sqlite3/build/{Debug,Release/obj}/**"
-  - "!**/node_modules/@earendil-works/pi-coding-agent/docs/**"
   # node-gyp-build prefers build/Release over prebuilds/, so ship the prebuilds and drop the
   # host-arch rebuild — a cross-built arm64 package would otherwise load the x86-64 binary (#20530).
   - "!node_modules/tesseract.js-core/{tesseract-core.js,tesseract-core.wasm,tesseract-core.wasm.js}" # we don't need source files

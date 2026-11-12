@@ -13,10 +13,8 @@ import type { ServiceTierSelection } from '@shared/data/types/model'
 import type { WindowId } from '@shared/ipc/types'
 import type { ReasoningEffortOption } from '@shared/types/aiSdk'
 
-import { isAgentSessionWorkspaceError } from '../../runtime/agentSessionWorkspace'
 import type { AiStreamManager } from '../AiStreamManager'
 import type { StreamListener } from '../types'
-import { agentChatContextProvider } from './AgentChatContextProvider'
 import type { ChatContextProvider } from './ChatContextProvider'
 import { persistentChatContextProvider } from './PersistentChatContextProvider'
 import { temporaryChatContextProvider } from './TemporaryChatContextProvider'
@@ -80,7 +78,6 @@ const logger = loggerService.withContext('chatContextDispatch')
  * `persistentChatContextProvider` is the catch-all and stays last.
  */
 const providers: readonly ChatContextProvider[] = [
-  agentChatContextProvider,
   temporaryChatContextProvider,
   persistentChatContextProvider
 ]
@@ -115,20 +112,7 @@ export async function dispatchStreamRequest(
       topicId: req.topicId
     })
   }
-  const prepared = await provider.prepareDispatch(subscriber, req, { hasLiveStream }).catch((error: unknown) => {
-    if (isAgentSessionWorkspaceError(error)) {
-      return {
-        blocked: {
-          reason: 'agent-session-workspace' as const,
-          message: error.message
-        }
-      }
-    }
-    throw error
-  })
-  if ('blocked' in prepared) {
-    return { mode: 'blocked', ...prepared.blocked }
-  }
+  const prepared = await provider.prepareDispatch(subscriber, req, { hasLiveStream })
   for (const model of prepared.models) {
     model.request.interactionWindowId = req.interactionWindowId
   }

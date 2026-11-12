@@ -84,9 +84,6 @@ export async function createBuiltinMcpEndpoint(
       const { createDiDiMcpServer } = await import('./didiMcp')
       return statelessEndpoint(() => createDiDiMcpServer(envs.DIDI_API_KEY))
     }
-    case BuiltinMcpServerNames.browser: {
-      return application.get('BrowserSessionService').createMcpEndpoint()
-    }
     default:
       throw new Error(`Unknown in-memory MCP server: ${name}`)
   }
@@ -115,7 +112,6 @@ export function hasInMemoryImplementation(name: string): boolean {
     BuiltinMcpServerNames.filesystem,
     BuiltinMcpServerNames.difyKnowledge,
     BuiltinMcpServerNames.python,
-    BuiltinMcpServerNames.didiMcp,
-    BuiltinMcpServerNames.browser
+    BuiltinMcpServerNames.didiMcp
   ].some((builtin) => builtin === name)
 }

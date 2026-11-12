@@ -45,7 +45,7 @@ import type {
   WebSearchOutput,
   WorkflowInput,
   WorkflowOutput
-} from '@anthropic-ai/claude-agent-sdk/sdk-tools'
+} from './claudeAgentSdkTools'
 import * as z from 'zod'
 
 import { TO_MARKDOWN_TOOL_NAME } from '@shared/ai/builtinTools'

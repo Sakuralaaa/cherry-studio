@@ -13,7 +13,7 @@ import { resolveNotificationConversationName } from './notificationActivation'
 const sentenceSegmenter = new Intl.Segmenter(undefined, { granularity: 'sentence' })
 
 @Injectable('ConversationNotificationService')
-@DependsOn(['AgentSessionRuntimeService', 'AiStreamManager', 'NotificationService'])
+@DependsOn(['AiStreamManager', 'NotificationService'])
 @ServicePhase(Phase.WhenReady)
 export class ConversationNotificationService extends BaseService {
   protected onInit(): void {
@@ -27,9 +27,6 @@ export class ConversationNotificationService extends BaseService {
     )
     this.registerDisposable(
       application.get('AiStreamManager').onApprovalRequested((event) => this.handleApprovalRequested(event))
-    )
-    this.registerDisposable(
-      application.get('AgentSessionRuntimeService').onApprovalRequested((event) => this.handleApprovalRequested(event))
     )
   }
 

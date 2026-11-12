@@ -1,4 +1,4 @@
-import type { AccessibilityContext } from '@main/features/browser'
+import type { AccessibilityContext } from './accessibility'
 import type { WebviewAnnotation, WebviewAnnotationTarget } from '@shared/types/webviewAnnotation'
 
 export type {
@@ -6,7 +6,7 @@ export type {
   AccessibilityState,
   AccessibleNode,
   AccessibleNodeSummary
-} from '@main/features/browser'
+} from './accessibility'
 
 export interface AnnotationPage {
   title: string

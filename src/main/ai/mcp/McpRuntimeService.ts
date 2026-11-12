@@ -223,7 +223,7 @@ async function clampToolResultImages(
 
 @Injectable('McpRuntimeService')
 @ServicePhase(Phase.WhenReady)
-@DependsOn(['WindowManager', 'McpPackageService', 'BrowserSessionService'])
+@DependsOn(['WindowManager', 'McpPackageService'])
 export class McpRuntimeService extends BaseService {
   private connections = new Map<string, McpConnection>()
   private pendingConnections = new Map<string, Promise<McpConnection>>()
@@ -981,11 +981,6 @@ export class McpRuntimeService extends BaseService {
     context?: McpInteractionContext
   ): McpInteractionContext | undefined {
     if (!context) return undefined
-    if (context.sessionId) {
-      const host = application.get('AgentSessionRuntimeService').getMcpInteractionHost(context.sessionId)
-      if (!host) return undefined
-      context = { ...context, ...host }
-    }
     if (!context.windowId || !context.topicId || context.requestElicitation) return context
     const host = context
     const authorize = (kind: 'elicitation' | 'sampling' | 'roots', payload: unknown, signal: AbortSignal) =>

@@ -16,7 +16,6 @@ import { parse } from 'yaml'
 import pkg from './package.json'
 import { buildFlatContractCss } from './packages/ui/scripts/build-theme-css'
 import { chunkExportGuardPlugin } from './scripts/checkChunkExports'
-import { claudeCodeBinaryManifest } from './scripts/claudeCodeBinaryManifest'
 import { uiContractPlugin } from './scripts/uiContract/vitePlugin'
 import { APP_EDITIONS, type AppEdition } from './src/shared/types/appEdition'
 import { parseReleaseHistory, validateCurrentReleaseHistory } from './src/shared/utils/releaseNotes'
@@ -141,7 +140,6 @@ export default defineConfig({
   main: {
     define: {
       __APP_EDITION__: JSON.stringify(rendererEdition),
-      __CLAUDE_CODE_BINARY_MANIFEST__: JSON.stringify(claudeCodeBinaryManifest(__dirname))
     },
     plugins: [
       {

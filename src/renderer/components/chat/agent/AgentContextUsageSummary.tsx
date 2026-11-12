@@ -2,7 +2,7 @@ import { startCase } from 'es-toolkit'
 import { ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-import type { ThreadContextUsage, ContextCategoryKey } from '@cherrystudio/agent-runtime'
+import type { ThreadContextUsage, ContextCategoryKey } from '@shared/ai/agentSessionContextUsage'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, ScrollArea } from '@cherrystudio/ui'
 import { ContextUsageSummary } from '@renderer/components/chat/contextUsage'
 import { useMcpServers } from '@renderer/hooks/useMcpServer'

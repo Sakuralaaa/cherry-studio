@@ -719,23 +719,6 @@ const TranslatePage: FC = () => {
 
   const processFile = useCallback(
     async (file: FileMetadata) => {
-      if (getFileExtension(file.path) === '.pdf') {
-        const maxSize = 20 * MB
-        if (file.size > maxSize) {
-          toast.error(t('translate.files.error.too_large') + ` (0 ~ ${maxSize / MB} MB)`)
-          return
-        }
-        pdfTextRequestIdRef.current += 1
-        pdfTextCacheRef.current = null
-        pdfTextFallbackStartedRef.current = false
-        prePdfOutputRef.current = translateOutput
-        setPdfTextFallbackActive(false)
-        setPdfTextOcrRequired(false)
-        setIsPdfTextExtracting(false)
-        setPdfFile({ name: file.name, path: AbsoluteFilePathSchema.parse(file.path) })
-        return
-      }
-
       resetPdfMode()
       if (isImageFileMetadata(file)) {
         await startOcr(file)

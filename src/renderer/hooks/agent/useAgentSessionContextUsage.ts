@@ -1,4 +1,4 @@
-import type { ThreadContextUsage } from '@cherrystudio/agent-runtime'
+import type { ThreadContextUsage } from '@shared/ai/agentSessionContextUsage'
 import { useSharedCacheValue } from '@renderer/data/hooks/useCache'
 import { AGENT_SESSION_CONTEXT_USAGE_CACHE_KEY } from '@shared/ai/agentSessionContextUsage'
 import type { Model } from '@shared/data/types/model'

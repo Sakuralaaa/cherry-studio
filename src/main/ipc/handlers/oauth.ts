@@ -27,6 +27,7 @@ export const oauthHandlers: IpcHandlersFor<typeof oauthRequestSchemas> = {
     if (!isClaudeCodeProviderId(providerId)) {
       throw new Error(`Unsupported external-cli provider: ${providerId}`)
     }
-    return application.get('CodeCliService').checkClaudeLogin()
+    // Cherry Studio Lite: the Claude Code CLI integration is removed.
+    return Promise.resolve(false)
   }
 }

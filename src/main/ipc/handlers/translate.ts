@@ -19,23 +19,9 @@ export const translateHandlers: IpcHandlersFor<typeof translateRequestSchemas> =
     if (!wc) throw new Error('translate.open requires a managed window')
     return translateService.open(wc, request)
   },
-  'translate.pdf.start': async (request, { senderId }) => {
-    if (!senderId) throw new Error('translate.pdf.start requires a managed window')
-    return application.get('PdfTranslationService').translate(
-      request,
-      (stage) => {
-        application.get('IpcApiService').send(senderId, 'translate.pdf.stage', { jobId: request.jobId, stage })
-      },
-      (progress) => {
-        application.get('IpcApiService').send(senderId, 'translate.pdf.progress', {
-          jobId: request.jobId,
-          ...progress
-        })
-      }
-    )
+  // Cherry Studio Lite: PDF/document (BabelDOC) translation is removed; PDFs are translated as extracted text.
+  'translate.pdf.start': async () => {
+    throw new Error('PDF translation is not available in Cherry Studio Lite')
   },
-  'translate.pdf.cancel': async ({ jobId }, { senderId }) => {
-    if (!senderId) throw new Error('translate.pdf.cancel requires a managed window')
-    application.get('PdfTranslationService').cancel(jobId)
-  }
+  'translate.pdf.cancel': async () => {}
 }

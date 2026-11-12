@@ -1,23 +1,18 @@
-import { application } from '@application'
-import { loggerService } from '@logger'
-import {
-  type AccessibilityCaptureBudget,
-  type AccessibilityStatus,
-  ANNOTATION_EXPORT_LIMITS,
-  BrowserSessionError,
-  createAccessibilityContext,
-  type GuestSession
-} from '@main/features/browser'
 import {
   WEBVIEW_ANNOTATION_LIMITS,
   type WebviewAnnotation,
   type WebviewAnnotationTarget
 } from '@shared/types/webviewAnnotation'
 
+import {
+  type AccessibilityCaptureBudget,
+  type AccessibilityStatus,
+  ANNOTATION_EXPORT_LIMITS,
+  createAccessibilityContext
+} from './accessibility'
 import { formatWebviewAnnotations, sanitizeWebviewAnnotationUrl } from './annotationMarkdown'
 import type { AnnotationDocument, ResolvedAnnotation, ResolvedAnnotationDocument } from './annotationTypes'
 
-const logger = loggerService.withContext('annotationExport')
 const ACCESSIBILITY_CAPTURE_TIMEOUT_MS = 5_000
 
 async function captureDocumentAccessibility(
@@ -34,41 +29,10 @@ async function captureDocumentAccessibility(
     }))
   if (Date.now() >= deadline) return withStatus('timeout')
   if (budget.remaining <= 0) return withStatus('budget_exceeded')
-  if (guest.isDestroyed() || guest.isDevToolsOpened()) return withStatus('debugger_unavailable')
-  const service = application.get('BrowserSessionService')
-  const owner = `annotation:${guest.id}`
-  let session: GuestSession
-  try {
-    session = await service.acquire(guest, owner, { ownership: 'borrowed' })
-  } catch {
-    return withStatus('debugger_unavailable')
-  }
-  try {
-    const resolved: ResolvedAnnotation[] = []
-    for (const annotation of document.annotations) {
-      try {
-        resolved.push({
-          ...annotation,
-          accessibility: await session.describeElement(annotation, budget, { deadline, signal })
-        })
-      } catch (error) {
-        signal?.throwIfAborted()
-        const status =
-          error instanceof BrowserSessionError && (error.code === 'timeout' || error.code === 'debugger_unavailable')
-            ? error.code
-            : 'capture_failed'
-        logger.debug('Failed to capture annotation accessibility context', {
-          webviewId: guest.id,
-          annotationId: annotation.id,
-          status
-        })
-        resolved.push({ ...annotation, accessibility: createAccessibilityContext(status) })
-      }
-    }
-    return resolved
-  } finally {
-    service.release(guest, owner)
-  }
+  // Cherry Studio Lite: the CDP browser session that captured accessibility trees is removed.
+  void guest
+  void signal
+  return withStatus('debugger_unavailable')
 }
 
 interface ExportAnnotationDocumentInput {

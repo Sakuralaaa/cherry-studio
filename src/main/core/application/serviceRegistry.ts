@@ -2,12 +2,7 @@ import { CacheService } from '@data/CacheService'
 import { DataApiService } from '@data/DataApiService'
 import { DbService } from '@data/db/DbService'
 import { PreferenceService } from '@data/PreferenceService'
-import { AgentJobsService } from '@main/ai/agents/AgentJobsService'
-import { AgentLifecycleService } from '@main/ai/agents/AgentLifecycleService'
-import { AgentSessionDeliveryService } from '@main/ai/agentSession/AgentSessionDeliveryService'
-import { AgentSessionRuntimeService } from '@main/ai/agentSession/AgentSessionRuntimeService'
 import { AiService } from '@main/ai/AiService'
-import { ChannelManager } from '@main/ai/channels'
 import { TtsInferenceService } from '@main/ai/localModel'
 import { AsrInferenceService } from '@main/ai/localModel'
 import { EmbeddingInferenceService } from '@main/ai/localModel'
@@ -16,13 +11,7 @@ import { OcrInferenceService } from '@main/ai/localModel'
 import { McpCatalogService } from '@main/ai/mcp/McpCatalogService'
 import { McpPackageService } from '@main/ai/mcp/McpPackageService'
 import { McpRuntimeService } from '@main/ai/mcp/McpRuntimeService'
-import { ClaudeCodeTraceBridgeService, NodeTraceService, TraceStorageService } from '@main/ai/observability'
-import {
-  ClaudeCodeBinaryService,
-  ClaudeCodeProcessManager,
-  ClaudeCodeSessionStateService,
-  ClaudeCodeWarmQueryManager
-} from '@main/ai/runtime/claudeCode'
+import { NodeTraceService, TraceStorageService } from '@main/ai/observability'
 import { SkillSubscriptionService } from '@main/ai/skills/SkillSubscriptionService'
 import { AiStreamManager } from '@main/ai/streamManager'
 import { VoiceSessionService } from '@main/ai/voice/VoiceSessionService'
@@ -35,16 +24,10 @@ import { UtilityProcessManager } from '@main/core/utilityProcess/UtilityProcessM
 import { WindowManager } from '@main/core/window/WindowManager'
 import { FileProcessingService, TesseractRuntimeService } from '@main/features/fileProcessing'
 import { KnowledgeService, KnowledgeVectorStoreService } from '@main/features/knowledge'
-import { ApiGatewayService } from '@main/features/apiGateway/ApiGatewayService'
-import { BrowserSessionService } from '@main/features/browser'
 import { IpcApiService } from '@main/ipc/IpcApiService'
-import { CodeCliService } from '@main/services/codeCli'
-import { AttachmentPresenceService, RemoteAccessService } from '@main/services/remoteAccess'
-import { ComputerUseService } from '@main/services/ComputerUseService'
 import { AppMenuService } from '@main/services/AppMenuService'
 import { AppService } from '@main/services/AppService'
 import { AutoBackupService } from '@main/services/AutoBackupService'
-import { AutomationReplService } from '@main/services/automation'
 import { BinaryManager } from '@main/services/binaryManager'
 import { CherryCloudNotificationService } from '@main/services/cherryCloud/CherryCloudNotificationService'
 import { CherryCloudService } from '@main/services/cherryCloud/CherryCloudService'
@@ -52,7 +35,7 @@ import { CitationPreviewService } from '@main/services/CitationPreviewService'
 import { CommandService } from '@main/services/CommandService'
 import { ConversationNavigationService } from '@main/services/ConversationNavigationService'
 import { ConversationNotificationService } from '@main/services/ConversationNotificationService'
-import { DoctorAgentService, DoctorService } from '@main/services/diagnostics'
+import { DoctorService } from '@main/services/diagnostics'
 import { DirectoryTreeManager, FileManager, FileIntakeService, FileEditService } from '@main/services/file'
 import { LogRetentionService } from '@main/services/LogRetentionService'
 import { MainNetworkDevtoolsService } from '@main/services/mainNetworkDevtools'
@@ -61,7 +44,6 @@ import { MediaProtocolService } from '@main/services/mediaProtocol'
 import { NetworkService } from '@main/services/network'
 import { NotificationService } from '@main/services/NotificationService'
 import { OAuthRuntimeService } from '@main/services/oauth/runtime/OAuthRuntimeService'
-import { PdfTranslationService } from '@main/services/PdfTranslationService'
 import { ProtocolService } from '@main/services/protocol/ProtocolService'
 import { ProxyService } from '@main/services/proxy/ProxyService'
 import { PythonService } from '@main/services/PythonService'
@@ -100,13 +82,6 @@ import { WebviewService } from '@main/services/webview'
  * Value = service class constructor
  */
 export const services = {
-  ComputerUseService,
-  CodeCliService,
-  BrowserSessionService,
-  ApiGatewayService,
-  RemoteAccessService,
-  AttachmentPresenceService,
-  AutomationReplService,
   MainNetworkDevtoolsService,
   WindowManager,
   UtilityProcessManager,
@@ -137,14 +112,12 @@ export const services = {
   ThemeService,
   TraceStorageService,
   NodeTraceService,
-  ClaudeCodeTraceBridgeService,
   ProtocolService,
   MediaProtocolService,
   ProxyService,
   NetworkService,
   StorageMonitorService,
   DoctorService,
-  DoctorAgentService,
   LogRetentionService,
   PythonService,
   TrayService,
@@ -159,18 +132,8 @@ export const services = {
   McpRuntimeService,
   McpCatalogService,
   BinaryManager,
-  PdfTranslationService,
-  ClaudeCodeBinaryService,
-  ClaudeCodeProcessManager,
-  AgentSessionRuntimeService,
-  AgentSessionDeliveryService,
-  AgentJobsService,
-  AgentLifecycleService,
-  ChannelManager,
   AiService,
   VoiceSessionService,
-  ClaudeCodeWarmQueryManager,
-  ClaudeCodeSessionStateService,
   AiStreamManager,
   AsrInferenceService,
   TtsInferenceService,

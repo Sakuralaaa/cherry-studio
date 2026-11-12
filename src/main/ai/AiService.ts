@@ -418,7 +418,6 @@ export interface AiRerankResult {
   'McpCatalogService',
   'AiStreamManager',
   'JobManager',
-  'AutomationReplService',
   'RuntimeActivityService'
 ])
 export class AiService extends BaseService {
@@ -463,22 +462,6 @@ export class AiService extends BaseService {
     payload: AiToolApprovalRespondRequest,
     senderWc: Electron.WebContents | undefined
   ): Promise<AiToolApprovalRespondResponse> {
-    // Claude-Agent path: the runtime settles any persisted interaction card, then unblocks
-    // the exact `canUseTool` invocation that issued this approval id.
-    const result = application.get('AgentSessionRuntimeService').respondToolApproval(
-      payload.approvalId,
-      {
-        approved: payload.approved,
-        reason: payload.reason,
-        updatedInput: payload.updatedInput
-      },
-      payload.anchorId,
-      payload.topicId
-    )
-    if (result.ok) return result
-
-    // Agent-session anchors belong to the runtime path, never the chat message table.
-    if (payload.topicId && isAgentSessionTopic(payload.topicId)) return result
 
     // MCP path: write decisions to DB, then dispatch continue-conversation when nothing is pending.
     if (!payload.topicId || !payload.anchorId) {
@@ -603,17 +586,9 @@ export class AiService extends BaseService {
       throw new Error('streamText requires requestOptions.signal — no AbortController was attached by the caller')
     }
 
-    if (request.runtime?.kind === 'agent-session') {
-      return application.get('AgentSessionRuntimeService').openTurnStream({
-        sessionId: request.runtime.sessionId,
-        turnId: request.runtime.turnId,
-        interactionWindowId: request.interactionWindowId,
-        signal
-      })
-    }
 
-    if (isAgentSessionTopic(request.conversation.topicId)) {
-      throw new Error(`Agent session stream ${request.conversation.topicId} requires an agent-session runtime request`)
+    if (request.runtime?.kind === 'agent-session' || isAgentSessionTopic(request.conversation.topicId)) {
+      throw new Error('Agents are not available in Cherry Studio Lite')
     }
 
     const repairUsagePlugins: { current?: AiPlugin[] } = {}

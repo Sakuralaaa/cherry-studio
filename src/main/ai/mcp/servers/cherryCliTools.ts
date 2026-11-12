@@ -3,7 +3,6 @@ import * as z from 'zod'
 
 import { application } from '@application'
 import { modelOutputToMcpResult } from '@main/ai/mcp/toolResult'
-import { CODE_CLI_TOOL_PRESET_BY_EXECUTABLE } from '@shared/data/presets/codeCliTools'
 
 export const CLI_LIST_TOOL_NAME = 'cli_list'
 export const CLI_SEARCH_TOOL_NAME = 'cli_search'
@@ -71,11 +70,7 @@ export function registerCliTools(server: McpServer): void {
           name: definition.name,
           ...(definition.requestedVersion ? { targetVersion: definition.requestedVersion } : {})
         }
-        if (CODE_CLI_TOOL_PRESET_BY_EXECUTABLE[definition.name]) {
-          await application.get('CodeCliService').installCli(request)
-        } else {
-          await binaryManager.installByName(request)
-        }
+        await binaryManager.installByName(request)
       } else {
         await binaryManager.addCustomTool({
           name: definition.name,
