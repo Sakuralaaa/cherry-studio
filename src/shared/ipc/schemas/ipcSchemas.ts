@@ -6,14 +6,11 @@ import { type AppEventSchemas, appRequestSchemas } from './app'
 import { assistantRequestSchemas } from './assistant'
 import { type BackupEventSchemas, backupRequestSchemas } from './backup'
 import { type BinaryEventSchemas, binaryRequestSchemas } from './binary'
-import { type BrowserEventSchemas, browserRequestSchemas } from './browser'
 import { type ChannelEventSchemas, channelRequestSchemas } from './channel'
-import { type CherryCloudEventSchemas, cherryCloudRequestSchemas } from './cherryCloud'
-import { cherryinRequestSchemas } from './cherryin'
-import { citationRequestSchemas } from './citation'
-import { codeCliRequestSchemas } from './codeCli'
 import { type ComputerUseEventSchemas, computerUseRequestSchemas } from './computerUse'
-import { deepSeekHarnessRequestSchemas } from './deepSeekHarness'
+import { type BrowserEventSchemas, browserRequestSchemas } from './browser'
+import { type CherryCloudEventSchemas, cherryCloudRequestSchemas } from './cherryCloud'
+import { citationRequestSchemas } from './citation'
 import { diagnosticsRequestSchemas } from './diagnostics'
 import { doctorRequestSchemas } from './doctor'
 import { doctorAgentRequestSchemas } from './doctorAgent'
@@ -21,25 +18,17 @@ import { exportRequestSchemas } from './export'
 import { externalAppRequestSchemas } from './externalApp'
 import { type FileEventSchemas, fileRequestSchemas } from './file'
 import { fileProcessingRequestSchemas } from './fileProcessing'
-import { hermesDashboardRequestSchemas } from './hermesDashboard'
 import { knowledgeRequestSchemas } from './knowledge'
 import { localModelRequestSchemas } from './localModel'
 import { type McpEventSchemas, mcpRequestSchemas } from './mcp'
-import { type MiniAppEventSchemas, miniAppRequestSchemas } from './miniApp'
 import { type NavigationEventSchemas, navigationRequestSchemas } from './navigation'
 import { type NotificationEventSchemas, notificationRequestSchemas } from './notification'
 import { oauthRequestSchemas } from './oauth'
-import { openclawRequestSchemas } from './openclaw'
-import { ovmsRequestSchemas } from './ovms'
 import { pdfjsRequestSchemas } from './pdfjs'
 import { printRequestSchemas } from './print'
 import { profileRequestSchemas } from './profile'
 import { providerRequestSchemas } from './provider'
 import { proxyRequestSchemas } from './proxy'
-import { type QuickAssistantEventSchemas, quickAssistantRequestSchemas } from './quickAssistant'
-import { type ScreenshotEventSchemas, screenshotRequestSchemas } from './screenshot'
-import { screenshotChatRequestSchemas, type ScreenshotChatEventSchemas } from './screenshotChat'
-import { type SelectionEventSchemas, selectionRequestSchemas } from './selection'
 import { skillRequestSchemas } from './skill'
 import { type SystemEventSchemas, systemRequestSchemas } from './system'
 import { type TabEventSchemas, tabRequestSchemas } from './tab'
@@ -66,41 +55,30 @@ export const ipcRequestSchemas = {
   ...appRequestSchemas,
   ...backupRequestSchemas,
   ...binaryRequestSchemas,
-  ...browserRequestSchemas,
-  ...channelRequestSchemas,
-  ...cherryinRequestSchemas,
   ...cherryCloudRequestSchemas,
-  ...citationRequestSchemas,
-  ...codeCliRequestSchemas,
+  ...browserRequestSchemas,
   ...computerUseRequestSchemas,
-  ...deepSeekHarnessRequestSchemas,
+  ...channelRequestSchemas,
+  ...citationRequestSchemas,
   ...diagnosticsRequestSchemas,
   ...doctorRequestSchemas,
   ...doctorAgentRequestSchemas,
   ...exportRequestSchemas,
   ...externalAppRequestSchemas,
-  ...hermesDashboardRequestSchemas,
   ...fileRequestSchemas,
   ...fileProcessingRequestSchemas,
   ...knowledgeRequestSchemas,
   ...localModelRequestSchemas,
   ...mcpRequestSchemas,
-  ...miniAppRequestSchemas,
   ...navigationRequestSchemas,
   ...notificationRequestSchemas,
   ...oauthRequestSchemas,
-  ...openclawRequestSchemas,
-  ...ovmsRequestSchemas,
   ...pdfjsRequestSchemas,
   ...printRequestSchemas,
   ...assistantRequestSchemas,
   ...profileRequestSchemas,
   ...proxyRequestSchemas,
   ...providerRequestSchemas,
-  ...quickAssistantRequestSchemas,
-  ...screenshotRequestSchemas,
-  ...screenshotChatRequestSchemas,
-  ...selectionRequestSchemas,
   ...skillRequestSchemas,
   ...systemRequestSchemas,
   ...tabRequestSchemas,
@@ -126,19 +104,14 @@ export type IpcEventSchemas = AiEventSchemas &
   AppEventSchemas &
   BackupEventSchemas &
   BinaryEventSchemas &
-  BrowserEventSchemas &
-  ChannelEventSchemas &
   CherryCloudEventSchemas &
+  BrowserEventSchemas &
   ComputerUseEventSchemas &
+  ChannelEventSchemas &
   FileEventSchemas &
   McpEventSchemas &
-  MiniAppEventSchemas &
   NavigationEventSchemas &
   NotificationEventSchemas &
-  QuickAssistantEventSchemas &
-  ScreenshotEventSchemas &
-  ScreenshotChatEventSchemas &
-  SelectionEventSchemas &
   SystemEventSchemas &
   TabEventSchemas &
   TranslateEventSchemas &

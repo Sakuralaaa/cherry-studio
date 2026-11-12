@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 import type { ReactNode } from 'react'
 
-import type { SidebarAppId } from '@renderer/utils/sidebar'
+import type { SidebarFavorite } from '@shared/data/preference/preferenceTypes'
 
 type SidebarIconComponent = (props: LucideProps) => ReactNode
 
@@ -44,7 +44,7 @@ export const SIDEBAR_ICON_COMPONENTS = {
   files: Folder,
   code_tools: CodeMateIcon,
   notes: NotepadText
-} satisfies Record<SidebarAppId, SidebarIconComponent>
+} satisfies Partial<Record<SidebarFavorite, SidebarIconComponent>>
 
 const RESOURCE_ICON_COMPONENTS = {
   knowledgeBase: Database,

@@ -1,4 +1,4 @@
-import { Eraser, ScanLine } from 'lucide-react'
+import { Eraser } from 'lucide-react'
 import mime from 'mime-types'
 import React, { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -122,7 +122,6 @@ import { useComposerFileCapabilities } from './shared/useComposerFileCapabilitie
 import { useComposerKnowledgeBaseScope } from './shared/useComposerKnowledgeBaseScope'
 import { useComposerToolbarPinnedTools } from './shared/useComposerToolbarPinnedTools'
 import { useEntityReferenceMentionSource } from './shared/useEntityReferenceMentionSource'
-import { useScreenshotChat } from './shared/useScreenshotChat'
 
 const logger = loggerService.withContext('ChatComposer')
 const CHAT_MANAGED_TOKEN_KINDS = ['file', 'knowledge'] as const satisfies readonly ComposerDraftToken['kind'][]
@@ -558,14 +557,6 @@ const ChatComposerInner = ({
   const editingOriginalFilePartsByTokenIdRef = useRef(new Map<string, ComposerFilePart>())
   const restoredEditingSessionIdRef = useRef<number | null>(null)
   const isSavingEdit = savingEditingSessionId === editingMessageForCurrentTopic?.editingSessionId
-  const { screenshotEnabled, startScreenshot } = useScreenshotChat({
-    scopeKey: streamScopeKey,
-    editingId: editingMessageForCurrentTopic?.editingSessionId,
-    active: layerActive,
-    actionsRef,
-    setFiles,
-    isBlocked: () => isSavingEdit || directSendInFlightRef.current
-  })
   const selectAssistantMessage = t('button.select_assistant')
   const displayAssistant = assistant
   const hasMissingPersistedAssistant = !!assistantId && !isAssistantLoading && !assistant
@@ -1199,21 +1190,6 @@ const ChatComposerInner = ({
 
   const rootPanelLeadingItems = useMemo<QuickPanelListItem[]>(() => {
     const items: QuickPanelListItem[] = []
-    if (screenshotEnabled) {
-      const label = t('settings.shortcuts.screenshot_capture')
-      items.push({
-        id: 'composer:screenshot',
-        label,
-        icon: <ScanLine size={16} />,
-        filterText: label,
-        searchAliases: getQuickPanelSearchAliases(t, 'settings.shortcuts.screenshot_capture', [
-          'screenshot',
-          'capture'
-        ]),
-        action: startScreenshot
-      })
-    }
-
     if (hasNewTopicAction) {
       const label = t('chat.conversation.new')
       items.push({
@@ -1230,22 +1206,10 @@ const ChatComposerInner = ({
     }
 
     return items
-  }, [addNewTopic, hasNewTopicAction, newTopicDisabled, screenshotEnabled, startScreenshot, t])
+  }, [addNewTopic, hasNewTopicAction, newTopicDisabled, t])
   const mcpToolbarActive = isMcpToolbarActive({ scope: TopicType.Chat, assistant })
   const toolbarCustomTools = useMemo<ComposerToolbarCustomTool[]>(
     () => [
-      ...(screenshotEnabled
-        ? [
-            {
-              id: 'composer:screenshot',
-              label: t('settings.shortcuts.screenshot_capture'),
-              icon: <ScanLine size={18} />,
-              requiresPanel: false,
-              availableWithoutModel: true,
-              onSelect: startScreenshot
-            }
-          ]
-        : []),
       ...(hasNewTopicAction
         ? [
             {
@@ -1289,8 +1253,6 @@ const ChatComposerInner = ({
       hasNewTopicAction,
       mcpToolbarActive,
       newTopicDisabled,
-      screenshotEnabled,
-      startScreenshot,
       t
     ]
   )

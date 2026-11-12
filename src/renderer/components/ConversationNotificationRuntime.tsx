@@ -23,14 +23,14 @@ export function ConversationNotificationRuntime(): null {
   useEffect(() => {
     if (activeTab?.type !== 'route') return
     const appId = resolveSidebarActiveItem(activeTab.url)
-    if (appId !== 'agents' && appId !== 'assistants') return
+    if (appId !== 'assistants') return
     const conversationId = getSidebarApp(appId)?.conversationRoute?.keyFromUrl(activeTab.url)
     if (!conversationId) return
     const markRead = () => {
       if (!document.hasFocus() || document.visibilityState !== 'visible') return
       void dataApiService
         .post('/notifications/read-conversation', {
-          body: { conversationType: appId === 'agents' ? 'agent' : 'assistant', conversationId }
+          body: { conversationType: 'assistant', conversationId }
         })
         .catch((error) => logger.error('Failed to mark conversation notifications read', error as Error))
     }

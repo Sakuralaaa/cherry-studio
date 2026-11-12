@@ -194,8 +194,21 @@ function endpointCheck<Id extends Extract<DoctorCheckId, `network-endpoint-${str
   })
 }
 
-export const endpointUpdate = endpointCheck('network-endpoint-update', 'update')
-export const endpointRegistry = endpointCheck('network-endpoint-registry', 'registry')
+// Lite edition: no update server and no remote provider registry to probe.
+export const endpointUpdate = defineDoctorCheck({
+  id: 'network-endpoint-update',
+  async run() {
+    return { status: 'pass' as const }
+  },
+  fixes: {}
+})
+export const endpointRegistry = defineDoctorCheck({
+  id: 'network-endpoint-registry',
+  async run() {
+    return { status: 'pass' as const }
+  },
+  fixes: {}
+})
 export const endpointCloud = endpointCheck('network-endpoint-cloud', 'cloud')
 export const endpointDiagnostics = endpointCheck('network-endpoint-diagnostics', 'diagnostics')
 

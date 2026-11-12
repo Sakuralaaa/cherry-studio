@@ -10,8 +10,6 @@ import { application } from '@application'
 import { formatPrivateKey, hasProviderConfig, type StringKeys } from '@cherrystudio/ai-core/provider'
 import type { CherryInProviderSettings } from '@cherrystudio/ai-sdk-provider'
 import { providerService, type ResolvedProviderApiKey } from '@main/data/services/ProviderService'
-import { copilotService } from '@main/services/CopilotService'
-import { mergeHeaders } from '@main/utils/http'
 import { CHERRYAI_PROVIDER_ID, isManagedCherryCloudModel } from '@shared/data/presets/cherryai'
 import { OPENAI_CODEX_PROVIDER_ID } from '@shared/data/presets/codex'
 import { GROK_CLI_PROVIDER_ID } from '@shared/data/presets/grokCli'
@@ -52,7 +50,6 @@ import { normalizeArkResponsesResponse, stripArkUnsupportedIncludes } from './ar
 import { generateSignature } from './cherryai'
 import { buildCherryCloudProviderConfig } from './cherryCloud'
 import { buildCodexRequestHeaders, coerceCodexRequestBody } from './codex'
-import { COPILOT_DEFAULT_HEADERS } from './constants'
 import type { ServingAuthMethod, ServingCredentialReceipt } from './credential'
 import { normalizeComfyuiBaseUrl } from './custom/comfyui/comfyuiHttp'
 import { appendDashScopeWebExtractor } from './custom/dashscope/dashscopeWebExtractor'
@@ -239,7 +236,6 @@ export async function resolveProviderAiSdkConfig(
   }
 
   const builders: ConfigBuilderEntry[] = [
-    { match: (p) => p.id === SystemProviderIds.copilot, build: withProviderAuth('oauth', buildCopilotConfig) },
     {
       match: (p) => matchesPreset(p, SystemProviderIds.opencode),
       build: withSelectedApiKey(buildOpenCodeGoConfig)
@@ -428,23 +424,6 @@ export async function resolveProviderAiSdkConfig(
 }
 
 // ── Config Builders ──
-
-async function buildCopilotConfig(ctx: BuilderContext): Promise<ProviderConfig<'github-copilot-openai-compatible'>> {
-  const storedHeaders = {} // TODO: read from PreferenceService if copilot headers are persisted
-  const headers = mergeHeaders(COPILOT_DEFAULT_HEADERS, storedHeaders)
-  const { token } = await copilotService.getToken(null as any, headers)
-
-  return {
-    providerId: 'github-copilot-openai-compatible',
-    endpoint: ctx.endpoint,
-    providerSettings: {
-      ...ctx.baseConfig,
-      apiKey: token,
-      headers: mergeHeaders(headers, getExtraHeaders(ctx.actualProvider)),
-      name: ctx.actualProvider.id
-    }
-  }
-}
 
 /**
  * OpenCode Go/Zen requires `x-opencode-session` on every request. The builder only

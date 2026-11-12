@@ -1,7 +1,6 @@
 import { app } from 'electron'
 
 import { application } from '@application'
-import { loadNativeCaptureBackend } from '@main/services/screenshot'
 import { UpgradeChannel } from '@shared/data/preference/preferenceTypes'
 
 import { defineDoctorCheck } from '../types'
@@ -67,68 +66,18 @@ export const installVersionChannel = defineDoctorCheck({
 
 export const installUpdateAvailable = defineDoctorCheck({
   id: 'install-update-available',
+  // Lite edition: auto-update and the screenshot native backend are removed.
   async run() {
-    const update = await application.get('AppUpdaterService').queryUpdateAvailability()
-    if (update.status === 'current') return { status: 'pass' }
-    if (update.status === 'unsupported')
-      return {
-        status: 'warn',
-        attribution: 'user-fixable',
-        detail: { variant: 'unsupported' },
-        actions: [{ kind: 'navigate', target: '/settings/about' }]
-      }
-
-    const runningVersion = update.currentVersion
-    return {
-      status: 'warn',
-      attribution: 'user-fixable',
-      detail: {
-        variant: 'available',
-        params: { currentVersion: runningVersion, availableVersion: update.version }
-      },
-      actions: [{ kind: 'navigate', target: '/settings/about' }],
-      devMessage: `Update ${update.version} is available for ${runningVersion}`,
-      evidence: [
-        { key: 'currentVersion', value: runningVersion, dataClass: 'public' },
-        { key: 'availableVersion', value: update.version, dataClass: 'public' }
-      ]
-    }
+    return { status: 'pass' as const }
   },
   fixes: {}
 })
 
 export const installNativeModules = defineDoctorCheck({
   id: 'install-native-modules',
+  // Lite edition: auto-update and the screenshot native backend are removed.
   async run() {
-    try {
-      loadNativeCaptureBackend()
-      return { status: 'pass' }
-    } catch (error) {
-      return {
-        status: 'fail',
-        attribution: 'app-bug',
-        detail: { variant: 'unavailable' },
-        actions: [{ kind: 'report' }],
-        devMessage: 'The screenshot native backend is unavailable; this check covers node-screenshots only',
-        evidence: [
-          { key: 'module', value: 'node-screenshots', dataClass: 'public' },
-          {
-            key: 'error',
-            value: error instanceof Error ? error.message : String(error),
-            dataClass: 'consent_required'
-          },
-          ...(error instanceof Error && error.cause
-            ? [
-                {
-                  key: 'cause',
-                  value: error.cause instanceof Error ? error.cause.message : String(error.cause),
-                  dataClass: 'consent_required' as const
-                }
-              ]
-            : [])
-        ]
-      }
-    }
+    return { status: 'pass' as const }
   },
   fixes: {}
 })

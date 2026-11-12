@@ -1,11 +1,10 @@
 import { isUndefined, omitBy } from 'es-toolkit/compat'
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import type { SWRConfiguration } from 'swr'
 
 import { useMutation, useQuery } from '@data/hooks/useDataApi'
 import { useDataChange } from '@data/hooks/useDataChange'
 import { loggerService } from '@logger'
-import { isLiteHiddenProvider } from '@renderer/utils/liteProviders'
 import { getProviderDisplayName } from '@renderer/utils/naming'
 import type {
   CreateProviderDto,
@@ -75,10 +74,7 @@ export function useProviders(
     [createTrigger]
   )
 
-  const providers = useMemo(
-    () => (data ? data.filter((provider) => !isLiteHiddenProvider(provider.id)) : EMPTY_PROVIDERS),
-    [data]
-  )
+  const providers = data ?? EMPTY_PROVIDERS
 
   return {
     providers,

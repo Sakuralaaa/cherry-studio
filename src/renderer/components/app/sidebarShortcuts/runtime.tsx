@@ -237,9 +237,9 @@ export function useSidebarNavigationSnapshot(): SidebarNavigationSnapshot {
   const { activeTab } = useTabs()
   const url = activeTab?.url ?? '/'
   const chatApp = getSidebarApp('assistants')!
-  const agentApp = getSidebarApp('agents')!
+  const agentApp = getSidebarApp('agents')
   const topicId = tabBelongsToApp(chatApp, url) ? chatApp.conversationRoute?.keyFromUrl(url) : undefined
-  const sessionId = tabBelongsToApp(agentApp, url) ? agentApp.conversationRoute?.keyFromUrl(url) : undefined
+  const sessionId = tabBelongsToApp(agentApp, url) ? agentApp?.conversationRoute?.keyFromUrl(url) : undefined
   const { data: topic, mutate: refreshTopic } = useQuery(`/topics/${topicId}`, {
     enabled: !!topicId,
     swrOptions: { keepPreviousData: false }

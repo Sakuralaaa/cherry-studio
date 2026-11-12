@@ -12,7 +12,8 @@ import {
   useRawAssistantTopicsSource
 } from '@renderer/hooks/resourceViewSources'
 import { useTabs } from '@renderer/hooks/tab'
-import { getSidebarApp, type SidebarAppId, tabBelongsToApp } from '@renderer/utils/sidebar'
+import { getSidebarApp, tabBelongsToApp } from '@renderer/utils/sidebar'
+import type { SidebarFavorite } from '@shared/data/preference/preferenceTypes'
 import type { Tab } from '@shared/data/cache/cacheValueTypes'
 
 const EMPTY_PIN_IDS = new Map<string, string>()
@@ -25,7 +26,7 @@ type AgentSessionsSnapshot = Pick<ReturnType<typeof useRawAgentSessionsSource>, 
 export function shouldLoadResourceViewSource(
   tabs: readonly Tab[],
   activeTabId: string | null | undefined,
-  appId: SidebarAppId
+  appId: SidebarFavorite
 ): boolean {
   const app = getSidebarApp(appId)
   if (!app) return false

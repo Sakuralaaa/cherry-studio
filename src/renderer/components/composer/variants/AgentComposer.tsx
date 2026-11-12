@@ -1,4 +1,4 @@
-import { ScanLine, Settings2, Terminal, ToolCase } from 'lucide-react'
+import { Settings2, Terminal, ToolCase } from 'lucide-react'
 import React, { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -142,7 +142,6 @@ import { useComposerKnowledgeBaseScope } from './shared/useComposerKnowledgeBase
 import { useComposerSelectionReferenceInsertion } from './shared/useComposerSelectionReferenceInsertion'
 import { useComposerToolbarPinnedTools } from './shared/useComposerToolbarPinnedTools'
 import { useEntityReferenceMentionItems } from './shared/useEntityReferenceMentionSource'
-import { useScreenshotChat } from './shared/useScreenshotChat'
 
 const logger = loggerService.withContext('AgentComposer')
 
@@ -635,14 +634,6 @@ const AgentComposerInner = ({
   const draftTokensRef = useRef(draftTokens)
   const sessionTopicId = buildAgentSessionTopicId(sessionId)
   const layerActive = useComposerLayerActive()
-  const { screenshotEnabled, startScreenshot } = useScreenshotChat({
-    scopeKey: sessionTopicId,
-    editingId: launchOptions?.editing?.messageId,
-    active: layerActive,
-    actionsRef,
-    setFiles,
-    isBlocked: () => directSendInFlightRef.current
-  })
   const accessiblePaths = sessionData?.accessiblePaths ?? EMPTY_ACCESSIBLE_PATHS
   const enableResourceMention = accessiblePaths.length > 0
   const userWorkspacePath = workspace?.type === 'user' ? workspace.path : undefined
@@ -1099,20 +1090,7 @@ const AgentComposerInner = ({
   const hasNewSessionAction = Boolean(onCreateEmptySession)
 
   const rootPanelNewSessionItems = useMemo<QuickPanelListItem[]>(() => {
-    const items: QuickPanelListItem[] = screenshotEnabled
-      ? [
-          {
-            id: 'composer:screenshot',
-            label: t('settings.shortcuts.screenshot_capture'),
-            icon: <ScanLine size={16} />,
-            searchAliases: getQuickPanelSearchAliases(t, 'settings.shortcuts.screenshot_capture', [
-              'screenshot',
-              'capture'
-            ]),
-            action: startScreenshot
-          }
-        ]
-      : []
+    const items: QuickPanelListItem[] = []
     if (!hasNewSessionAction) return items
 
     const label = t('agent.session.new')
@@ -1130,7 +1108,7 @@ const AgentComposerInner = ({
         }
       }
     ]
-  }, [handleCreateEmptySession, hasNewSessionAction, screenshotEnabled, startScreenshot, t])
+  }, [handleCreateEmptySession, hasNewSessionAction, t])
 
   const toolsSession = sessionData
   const handleReasoningEffortChange = useCallback(
@@ -1483,18 +1461,6 @@ const AgentComposerInner = ({
     const skillLabel = t('plugins.skills')
     const slashCommandsLabel = t('chat.input.slash_commands.title')
     return [
-      ...(screenshotEnabled
-        ? [
-            {
-              id: 'composer:screenshot',
-              label: t('settings.shortcuts.screenshot_capture'),
-              icon: <ScanLine size={18} />,
-              requiresPanel: false,
-              availableWithoutModel: true,
-              onSelect: startScreenshot
-            }
-          ]
-        : []),
       ...(hasNewSessionAction
         ? [
             {
@@ -1529,7 +1495,7 @@ const AgentComposerInner = ({
           unifiedPanelControl?.open({ launcherId: ComposerPanelSymbol.McpStatus, searchText: 'MCP' })
       }
     ]
-  }, [handleCreateEmptySession, hasNewSessionAction, mcpToolbarActive, screenshotEnabled, startScreenshot, t])
+  }, [handleCreateEmptySession, hasNewSessionAction, mcpToolbarActive, t])
 
   const renderQuickPanelShortcuts = useCallback(
     ({

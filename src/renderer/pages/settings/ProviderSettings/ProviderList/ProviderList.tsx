@@ -17,7 +17,6 @@ import { isProviderSettingsListVisibleProvider } from '@renderer/utils/providerS
 import type { Provider } from '@shared/data/types/provider'
 import { canManageProvider } from '@shared/utils/provider'
 
-import { useOvmsSupport } from '../hooks/useOvmsSupport'
 import type { ProviderFilterMode } from './providerFilterMode'
 import { getGroupedPresetIds } from './providerGrouping'
 import ProviderListContent, { type ProviderListContentItemState } from './ProviderListContent'
@@ -45,7 +44,6 @@ export default function ProviderList({
   const { t } = useTranslation()
   const { providers } = useProviders()
   const { applyReorderedList } = useReorder('/providers', { revalidateOnSuccess: false })
-  const { isSupported: isOvmsSupported } = useOvmsSupport()
 
   const [persistedFilterMode, setPersistedFilterMode] = usePersistCache('settings.provider.filter_mode')
   const [filterModeOverride, setFilterModeOverride] = useState<ProviderFilterMode | undefined>(filterModeHint)
@@ -154,9 +152,6 @@ export default function ProviderList({
       if (!isProviderSettingsListVisibleProvider(provider)) {
         return false
       }
-      if (provider.id === 'ovms' && !isOvmsSupported) {
-        return false
-      }
       if (filterMode === 'enabled' && !provider.isEnabled) {
         return false
       }
@@ -165,7 +160,7 @@ export default function ProviderList({
       }
       return matchKeywordsInProvider(keywords, provider, providerModelsIndex?.get(provider.id))
     })
-  }, [filterMode, isOvmsSupported, providers, providerModelsIndex, searchText])
+  }, [filterMode, providers, providerModelsIndex, searchText])
 
   const providerCounts = useMemo(
     () =>

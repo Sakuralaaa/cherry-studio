@@ -8,14 +8,11 @@ import { appHandlers } from './app'
 import { assistantHandlers } from './assistant'
 import { backupHandlers } from './backup'
 import { binaryHandlers } from './binary'
-import { browserHandlers } from './browser'
 import { channelHandlers } from './channel'
-import { cherryCloudHandlers } from './cherryCloud'
-import { cherryinHandlers } from './cherryin'
-import { citationHandlers } from './citation'
-import { codeCliHandlers } from './codeCli'
 import { computerUseHandlers } from './computerUse'
-import { deepSeekHarnessHandlers } from './deepSeekHarness'
+import { browserHandlers } from './browser'
+import { cherryCloudHandlers } from './cherryCloud'
+import { citationHandlers } from './citation'
 import { diagnosticsHandlers } from './diagnostics'
 import { doctorHandlers } from './doctor'
 import { doctorAgentHandlers } from './doctorAgent'
@@ -23,25 +20,17 @@ import { exportHandlers } from './export'
 import { externalAppHandlers } from './externalApp'
 import { fileHandlers } from './file'
 import { fileProcessingHandlers } from './fileProcessing'
-import { hermesDashboardHandlers } from './hermesDashboard'
 import { knowledgeHandlers } from './knowledge'
 import { localModelHandlers } from './localModel'
 import { mcpHandlers } from './mcp'
-import { miniAppHandlers } from './miniApp'
 import { navigationHandlers } from './navigation'
 import { notificationHandlers } from './notification'
 import { oauthHandlers } from './oauth'
-import { openclawHandlers } from './openclaw'
-import { ovmsHandlers } from './ovms'
 import { pdfjsHandlers } from './pdfjs'
 import { printHandlers } from './print'
 import { profileHandlers } from './profile'
 import { providerHandlers } from './provider'
 import { proxyHandlers } from './proxy'
-import { quickAssistantHandlers } from './quickAssistant'
-import { screenshotHandlers } from './screenshot'
-import { screenshotChatHandlers } from './screenshotChat'
-import { selectionHandlers } from './selection'
 import { skillHandlers } from './skill'
 import { systemHandlers } from './system'
 import { tabHandlers } from './tab'
@@ -70,14 +59,11 @@ export const ipcHandlers: IpcHandlersFor<IpcRequestSchemas> = {
   ...appHandlers,
   ...backupHandlers,
   ...binaryHandlers,
-  ...browserHandlers,
-  ...channelHandlers,
-  ...cherryinHandlers,
   ...cherryCloudHandlers,
-  ...citationHandlers,
-  ...codeCliHandlers,
+  ...browserHandlers,
   ...computerUseHandlers,
-  ...deepSeekHarnessHandlers,
+  ...channelHandlers,
+  ...citationHandlers,
   ...diagnosticsHandlers,
   ...doctorHandlers,
   ...doctorAgentHandlers,
@@ -85,26 +71,18 @@ export const ipcHandlers: IpcHandlersFor<IpcRequestSchemas> = {
   ...externalAppHandlers,
   ...fileHandlers,
   ...fileProcessingHandlers,
-  ...hermesDashboardHandlers,
   ...knowledgeHandlers,
   ...localModelHandlers,
   ...mcpHandlers,
-  ...miniAppHandlers,
   ...navigationHandlers,
   ...notificationHandlers,
   ...oauthHandlers,
-  ...openclawHandlers,
-  ...ovmsHandlers,
   ...pdfjsHandlers,
   ...printHandlers,
   ...assistantHandlers,
   ...profileHandlers,
   ...proxyHandlers,
   ...providerHandlers,
-  ...quickAssistantHandlers,
-  ...screenshotHandlers,
-  ...screenshotChatHandlers,
-  ...selectionHandlers,
   ...skillHandlers,
   ...systemHandlers,
   ...tabHandlers,

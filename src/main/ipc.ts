@@ -13,7 +13,6 @@ import { isSameOrInside } from '@main/utils/file'
 import { hasWritePermission, untildify } from '@main/utils/legacyFile'
 import { IpcChannel } from '@shared/IpcChannel'
 
-import { copilotService } from './services/CopilotService'
 import { fileStorage as fileManager } from './services/FileStorage'
 import FileService from './services/FileSystemService'
 import { legacyBackupManager as backupManager } from './services/LegacyBackupManager'
@@ -141,13 +140,6 @@ export async function registerIpc() {
     decrypt(encryptedData, iv, secretKey)
   )
 
-  //copilot
-  handleGuarded(IpcChannel.Copilot_GetAuthMessage, copilotService.getAuthMessage.bind(copilotService))
-  handleGuarded(IpcChannel.Copilot_GetCopilotToken, copilotService.getCopilotToken.bind(copilotService))
-  handleGuarded(IpcChannel.Copilot_SaveCopilotToken, copilotService.saveCopilotToken.bind(copilotService))
-  handleGuarded(IpcChannel.Copilot_GetToken, copilotService.getToken.bind(copilotService))
-  handleGuarded(IpcChannel.Copilot_Logout, copilotService.logout.bind(copilotService))
-  handleGuarded(IpcChannel.Copilot_GetUser, copilotService.getUser.bind(copilotService))
 
   // nutstore
   handleGuarded(IpcChannel.Nutstore_GetSsoUrl, NutstoreService.getNutstoreSSOUrl.bind(NutstoreService))

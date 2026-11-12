@@ -8,7 +8,6 @@ import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import ProviderField from '../primitives/ProviderField'
 import ProviderSection from '../primitives/ProviderSection'
 import { fieldClasses } from '../primitives/ProviderSettingsPrimitives'
-import CherryInSettings from '../ProviderSpecific/CherryInSettings'
 
 function ApiHostEndpointButton({ onClick }: { onClick: () => void }) {
   const { t } = useTranslation()
@@ -59,10 +58,7 @@ export function AzureApiVersionField({
 }
 
 interface ApiHostFieldProps {
-  providerIdForSettings: string
   apiHost: string
-  isCherryIN: boolean
-  isChineseUser: boolean
   isVertexAI: boolean
   isApiHostResettable: boolean
   onApiHostChange: (value: string) => void
@@ -72,10 +68,7 @@ interface ApiHostFieldProps {
 }
 
 export function ApiHostField({
-  providerIdForSettings,
   apiHost,
-  isCherryIN,
-  isChineseUser,
   isVertexAI,
   isApiHostResettable,
   onApiHostChange,
@@ -104,24 +97,7 @@ export function ApiHostField({
       }
       titleClassName="text-foreground"
       help={help}>
-      {isCherryIN && isChineseUser ? (
-        <div className={cn(fieldClasses.inputRow, 'group')}>
-          <div className="flex min-w-0 flex-1">
-            <CherryInSettings providerId={providerIdForSettings} />
-          </div>
-          <Tooltip content={t('settings.provider.request_configuration_tooltip')}>
-            <span className="inline-flex shrink-0">
-              <button
-                type="button"
-                className={fieldClasses.inputActionButton}
-                aria-label={t('settings.provider.request_configuration_tooltip')}
-                onClick={onOpenRequestConfig}>
-                <Settings size={14} aria-hidden />
-              </button>
-            </span>
-          </Tooltip>
-        </div>
-      ) : (
+      {(
         <div className={cn(fieldClasses.inputRow, 'group')}>
           <InputGroup className={`${fieldClasses.inputGroup} min-w-0 flex-1`}>
             <InputGroupInput

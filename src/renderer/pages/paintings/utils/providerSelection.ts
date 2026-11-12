@@ -1,16 +1,3 @@
-export function getValidPaintingOptions(
-  options: string[],
-  isOvmsSupported: boolean,
-  ovmsStatus: 'not-installed' | 'not-running' | 'running'
-) {
-  return options.filter((option) => {
-    if (option === 'ovms') {
-      return isOvmsSupported && ovmsStatus === 'running'
-    }
-    return true
-  })
-}
-
 export function resolvePaintingProvider(
   requestedProvider: string | undefined,
   defaultProvider: string | undefined,

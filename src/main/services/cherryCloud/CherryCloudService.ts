@@ -191,7 +191,7 @@ function abortable<T>(promise: Promise<T>, signal?: AbortSignal | null): Promise
 
 @Injectable('CherryCloudService')
 @ServicePhase(Phase.WhenReady)
-@DependsOn(['PowerService', 'AnalyticsService'])
+@DependsOn(['PowerService'])
 export class CherryCloudService extends BaseService {
   private readonly _onStatusChanged = new Emitter<CherryCloudStatus>()
   public readonly onStatusChanged: Event<CherryCloudStatus> = this._onStatusChanged.event

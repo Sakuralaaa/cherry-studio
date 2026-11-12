@@ -469,9 +469,6 @@ export class CodeCliService extends BaseService {
 
   /** Transactional write of a file-configured CLI's config files (code_cli.write_config). */
   public async writeConfigFiles(cliTool: FileConfiguredCli, files: CliConfigWriteFile[]): Promise<void> {
-    if (cliTool === CodeCli.HERMES) {
-      return application.get('HermesDashboardService').writeConfigFiles(() => writeCliConfigFiles(cliTool, files))
-    }
     return writeCliConfigFiles(cliTool, files)
   }
 

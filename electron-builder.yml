@@ -64,12 +64,9 @@ files:
   - "!node_modules/mammoth/{mammoth.browser.js,mammoth.browser.min.js}"
   - "!**/node_modules/better-sqlite3/{bin,deps,src}/**"
   - "!**/node_modules/better-sqlite3/build/{Debug,Release/obj}/**"
-  - "!**/node_modules/{selection-hook,@earendil-works/pi-coding-agent}/docs/**"
+  - "!**/node_modules/@earendil-works/pi-coding-agent/docs/**"
   # node-gyp-build prefers build/Release over prebuilds/, so ship the prebuilds and drop the
   # host-arch rebuild — a cross-built arm64 package would otherwise load the x86-64 binary (#20530).
-  - "!node_modules/selection-hook/build/**"
-  - "!node_modules/selection-hook/node_modules" # we don't need what in the node_modules dir
-  - "!node_modules/selection-hook/src" # we don't need source files
   - "!node_modules/tesseract.js-core/{tesseract-core.js,tesseract-core.wasm,tesseract-core.wasm.js}" # we don't need source files
   - "!node_modules/tesseract.js-core/{tesseract-core-lstm.js,tesseract-core-lstm.wasm,tesseract-core-lstm.wasm.js}" # we don't need source files
   - "!node_modules/tesseract.js-core/{tesseract-core-simd.js,tesseract-core-simd.wasm,tesseract-core-simd.wasm.js}" # tesseract.js loads tesseract-core-simd-lstm (default LSTM_ONLY OEM on SIMD)
@@ -94,7 +91,6 @@ asarUnpack:
   - "node_modules/@aiany/sqlite-vec-*/**" # sqlite-vec extension (.dylib/.so/.dll) is dlopen'd at runtime — must live on disk
   - "node_modules/@node-rs/xxhash-*/**" # native N-API binary must be unpacked for runtime loading
   - "node_modules/@firecrawl/anydoc-*/**" # native N-API binary must be unpacked for runtime loading
-  - "node_modules/node-screenshots-*/**" # native N-API binary must be unpacked for runtime loading
   - "node_modules/node-mac-permissions/**" # native N-API binary must be unpacked for runtime loading
 extraResources:
   - from: "src/main/ai/voice/localAdapters/NOTICE.txt"
@@ -116,7 +112,6 @@ win:
       to: "app.asar.unpacked/node_modules/@aiany/sqlite-vec-windows-${arch}/vec0.dll"
   target:
     - target: nsis
-    - target: portable
   signtoolOptions:
     sign: scripts/packaging/win-sign.js
   signExts:
@@ -134,11 +129,6 @@ nsis:
   include: build/nsis-installer.nsh
   buildUniversalInstaller: false
   differentialPackage: true
-portable:
-  artifactName: ${productName}-${version}-${arch}-portable.${ext}
-  buildUniversalInstaller: false
-  # electron-builder 26.15.6 uses true for a unique $PLUGINSDIR on every launch.
-  unpackDirName: true
 mac:
   extraFiles:
     - from: native/system-speech/dist/native/darwin-${arch}/cherry-system-speech
@@ -200,10 +190,6 @@ rpm:
   # Workaround for electron build issue on rpm package:
   # https://github.com/electron/forge/issues/3594
   fpm: ["--rpm-rpmbuild-define=_build_id_links none"]
-publish:
-  provider: generic
-  url: https://releases.cherry-ai.com
-  useMultipleRangeRequest: false
 electronDownload:
   mirror: https://npmmirror.com/mirrors/electron/
 beforePack: scripts/packaging/before-pack.js

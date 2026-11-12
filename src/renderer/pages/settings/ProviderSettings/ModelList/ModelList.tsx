@@ -5,7 +5,6 @@ import { ButtonGroup } from '@cherrystudio/ui'
 import { modelListClasses } from '../primitives/ProviderSettingsPrimitives'
 import { useModelListHealthRun } from './modelListHealthContext'
 import ProviderModelAdd from './ProviderModelAdd'
-import ProviderModelDownload from './ProviderModelDownload'
 import ProviderModelList from './ProviderModelList'
 import ProviderModelPullReconcile from './ProviderModelPullReconcile'
 
@@ -44,11 +43,7 @@ function ModelListContent({
               disabled={toolbarDisabled}
               guideVersion={modelPullGuideVersion}
             />
-            {providerId === 'ovms' ? (
-              <ProviderModelDownload providerId={providerId} disabled={toolbarDisabled} />
-            ) : (
-              <ProviderModelAdd providerId={providerId} disabled={toolbarDisabled} />
-            )}
+            <ProviderModelAdd providerId={providerId} disabled={toolbarDisabled} />
           </ButtonGroup>
         )}
       />

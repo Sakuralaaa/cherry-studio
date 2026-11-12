@@ -2,8 +2,6 @@ import { AccountSignOutButton } from '@renderer/components/AccountSignOutButton'
 import { SettingsContentColumn } from '@renderer/components/SettingsPrimitives'
 import { UserProfileEditor } from '@renderer/components/UserProfileEditor'
 
-import { SubscriptionSettings } from './SubscriptionSettings'
-
 export function ProfileSettings() {
   return (
     <SettingsContentColumn>
@@ -11,7 +9,6 @@ export function ProfileSettings() {
         <div id="setting-profile-profile">
           <UserProfileEditor />
         </div>
-        <SubscriptionSettings />
         <AccountSignOutButton />
       </div>
     </SettingsContentColumn>

@@ -1,55 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
-import { loggerService } from '@logger'
 import { useModels } from '@renderer/hooks/useModel'
 import { useProviders } from '@renderer/hooks/useProvider'
-import { ipcApi } from '@renderer/ipc'
 import type { Model } from '@shared/data/types/model'
 import type { Provider } from '@shared/data/types/provider'
 
 import { isAvailablePaintingModel } from '../model/utils/paintingModelOptions'
-import { getValidPaintingOptions } from '../utils/providerSelection'
-
-type OvmsStatus = 'not-installed' | 'not-running' | 'running'
-interface OvmsState {
-  supported: boolean
-  status: OvmsStatus
-}
-
-const DEFAULT_OVMS_STATE: OvmsState = { supported: false, status: 'not-running' }
-
-const logger = loggerService.withContext('usePaintingProviderOptions')
-
-let cachedOvmsState: OvmsState | undefined
-let inflightOvmsPromise: Promise<OvmsState> | undefined
-
-export function resetOvmsCache(): void {
-  cachedOvmsState = undefined
-  inflightOvmsPromise = undefined
-}
-
-async function loadOvmsState(): Promise<OvmsState> {
-  if (cachedOvmsState) return cachedOvmsState
-  if (!inflightOvmsPromise) {
-    inflightOvmsPromise = (async () => {
-      try {
-        const supported = await ipcApi.request('ovms.is_supported')
-        const status: OvmsStatus = supported ? await ipcApi.request('ovms.get_status') : 'not-running'
-        cachedOvmsState = { supported, status }
-        return cachedOvmsState
-      } finally {
-        // Clear inflight so a failed load can be retried next render cycle.
-        inflightOvmsPromise = undefined
-      }
-    })()
-  }
-  return inflightOvmsPromise
-}
 
 /**
  * Derive enabled providers that own at least one available painting model,
- * sorted for a stable UI, then filtered by the OVMS availability gate.
- * Exported for unit testing.
+ * sorted for a stable UI. Exported for unit testing.
  *
  * Provider enablement is fully capability-derived now — any provider whose
  * v2 models carry `image-generation` capability (or an OpenAI image endpoint)
@@ -60,8 +20,6 @@ async function loadOvmsState(): Promise<OvmsState> {
 export function buildPaintingProviderOptions(input: {
   models: readonly Model[]
   providers: readonly Pick<Provider, 'id' | 'isEnabled'>[]
-  ovmsSupported: boolean
-  ovmsStatus: OvmsStatus
 }): string[] {
   const enabledProviderIds = new Set(
     input.providers.filter((provider) => provider.isEnabled).map((provider) => provider.id)
@@ -73,38 +31,12 @@ export function buildPaintingProviderOptions(input: {
     }
   }
 
-  return getValidPaintingOptions([...capabilityProviderIds].sort(), input.ovmsSupported, input.ovmsStatus)
+  return [...capabilityProviderIds].sort()
 }
 
 export function usePaintingProviderOptions(): string[] {
   const { providers: allProviders } = useProviders()
   const { models } = useModels()
-  const [ovmsState, setOvmsState] = useState<OvmsState>(() => cachedOvmsState ?? DEFAULT_OVMS_STATE)
 
-  useEffect(() => {
-    if (cachedOvmsState) return
-    let cancelled = false
-    loadOvmsState()
-      .then((state) => {
-        if (!cancelled) setOvmsState(state)
-      })
-      .catch((error) => {
-        logger.warn('Failed to load OVMS state', error)
-        if (!cancelled) setOvmsState(DEFAULT_OVMS_STATE)
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  return useMemo(
-    () =>
-      buildPaintingProviderOptions({
-        providers: allProviders,
-        models,
-        ovmsSupported: ovmsState.supported,
-        ovmsStatus: ovmsState.status
-      }),
-    [allProviders, models, ovmsState]
-  )
+  return useMemo(() => buildPaintingProviderOptions({ providers: allProviders, models }), [allProviders, models])
 }

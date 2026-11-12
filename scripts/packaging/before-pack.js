@@ -1,12 +1,10 @@
 const { Arch } = require('electron-builder')
 const { rebuild } = require('@electron/rebuild')
-const { execSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const { parse } = require('yaml')
 
 const { ensureLinuxNativeArtifact } = require('../linux-native/download')
-const { buildSelectionPanel } = require('../../native/selection-panel/build')
 const { buildExternalApp } = require('../../native/external-app/build.cjs')
 
 // if you want to add new prebuild binaries packages with different architectures, you can add them here
@@ -65,18 +63,6 @@ const packages = [
   '@aiany/sqlite-vec-linux-x64',
   '@aiany/sqlite-vec-windows-arm64',
   '@aiany/sqlite-vec-windows-x64',
-  // Screen capture backend. Its platform binaries are npm sibling packages, not nested
-  // under the main package, so they are declared in optionalDependencies like every other
-  // family here — that is what puts them at top-level node_modules where the keep/exclude
-  // filters and the asarUnpack glob can see them. loong64 is omitted: not a target arch.
-  'node-screenshots-darwin-arm64',
-  'node-screenshots-darwin-x64',
-  'node-screenshots-linux-arm64-gnu',
-  'node-screenshots-linux-x64-gnu',
-  'node-screenshots-linux-x64-musl',
-  'node-screenshots-win32-arm64-msvc',
-  'node-screenshots-win32-ia32-msvc',
-  'node-screenshots-win32-x64-msvc',
   // macOS permission prompts. Unlike everything above, one package covers both arches.
   'node-mac-permissions'
 ]
@@ -208,8 +194,7 @@ exports.prepareSystemSpeechHelper = prepareSystemSpeechHelper
 const getNativeModuleFilters = (platform, arch) => {
   const keptPackages = keepPackages(platform, arch)
   return [
-    ...packages.filter((name) => !keptPackages.includes(name)).map((name) => `!**/node_modules/${name}/**`),
-    `!**/node_modules/selection-hook/prebuilds/!(${platform}-${arch})/**`
+    ...packages.filter((name) => !keptPackages.includes(name)).map((name) => `!**/node_modules/${name}/**`)
   ]
 }
 exports.getNativeModuleFilters = getNativeModuleFilters
@@ -222,16 +207,11 @@ exports.default = async function (context) {
   prepareSystemSpeechHelper(context)
 
   await prepareNativeModulesForElectron(context)
-  buildSelectionPanel({ platform, arch })
   buildExternalApp({ platform, arch, packaging: true })
   assertPrebuiltPackages(platform, arch)
 
-  console.log(`Downloading bundled binaries for ${platform}-${arch}...`)
-  execSync(`node "${path.join(__dirname, '../download-binaries.js')}" ${platform} ${arch} --packaging`, {
-    stdio: 'inherit'
-  })
-  // Fail the build rather than ship a half-empty resources/binaries/<platform>.
-  require('../download-binaries').verifyBundledBinaries(platform, arch)
+  // Lite edition: no bundled third-party binaries (mise, bun, uv, ripgrep, MinGit) are downloaded;
+  // BinaryManager installs tools on demand when something actually needs them.
 
   const excludePackages = async (packagesToExclude) => {
     // 从项目根目录的 electron-builder.yml 读取 files 配置，避免多次覆盖配置导致出错

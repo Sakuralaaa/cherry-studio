@@ -1,7 +1,8 @@
-import { asc, desc, eq, ne } from 'drizzle-orm'
+import { asc, desc, eq, inArray, ne } from 'drizzle-orm'
 
 import type { ProtoProviderConfig } from '@cherrystudio/provider-registry'
 import { RegistryLoader } from '@cherrystudio/provider-registry/node'
+import { knowledgeBaseTable } from '@data/db/schemas/knowledge'
 import { userProviderTable } from '@data/db/schemas/userProvider'
 import { providerService } from '@data/services/ProviderService'
 import { generateOrderKeySequenceBetween } from '@data/services/utils/orderKey'
@@ -12,9 +13,58 @@ import type { AuthConfig } from '@shared/data/types/provider'
 import type { DbType, ISeeder } from '../../types'
 
 const logger = loggerService.withContext('PresetProviderSeeder')
-const SEEDER_REVISION = 1
+const SEEDER_REVISION = 2
 const LEGACY_INVALID_ORDER_KEY = 'zz'
 
+/**
+ * Lite edition: preset providers deleted from the bundled registry. Installs that
+ * started on the official app still carry their rows (and models); drop them so
+ * they no longer show up in model management. A provider whose model still backs
+ * a knowledge base embedding is kept, since that FK has no ON DELETE action.
+ */
+export const LITE_REMOVED_PRESET_PROVIDER_IDS: readonly string[] = [
+  '302ai',
+  'aihubmix',
+  'aionly',
+  'alayanew',
+  'burncloud',
+  'cerebras',
+  'cherryin',
+  'claude-code',
+  'comfyui',
+  'copilot',
+  'dmxapi',
+  'fireworks',
+  'gateway',
+  'gpustack',
+  'grok-cli',
+  'groq',
+  'huggingface',
+  'lanyun',
+  'litellm',
+  'lmstudio',
+  'modelscope',
+  'new-api',
+  'nvidia',
+  'ocoolai',
+  'ollama',
+  'omlx',
+  'openai-codex',
+  'opencode',
+  'openrouter',
+  'ovms',
+  'ph8',
+  'poe',
+  'ppio',
+  'qiniu',
+  'radeon-cloud',
+  'silicon',
+  'sophnet',
+  'together',
+  'tokendance',
+  'tokenhub',
+  'xirang'
+]
 /**
  * Seed rows are DELTA rows: registry-owned connection config
  * (endpointConfigs, defaultChatEndpoint) is NOT persisted —
@@ -112,6 +162,29 @@ export class PresetProviderSeeder implements ISeeder {
 
       if (rows.length > 0) {
         providerService.batchUpsertTx(tx, rows)
+      }
+
+      const removable = tx
+        .select({ providerId: userProviderTable.providerId })
+        .from(userProviderTable)
+        .where(inArray(userProviderTable.providerId, [...LITE_REMOVED_PRESET_PROVIDER_IDS]))
+        .all()
+        .map((row) => row.providerId)
+      if (removable.length > 0) {
+        const embeddingProviders = new Set(
+          tx
+            .select({ embeddingModelId: knowledgeBaseTable.embeddingModelId })
+            .from(knowledgeBaseTable)
+            .all()
+            .map((row) => row.embeddingModelId?.split('::')[0])
+            .filter((id): id is string => Boolean(id))
+        )
+        const toDelete = removable.filter((id) => !embeddingProviders.has(id))
+        if (toDelete.length > 0) {
+          // user_model rows cascade with their provider.
+          tx.delete(userProviderTable).where(inArray(userProviderTable.providerId, toDelete)).run()
+          logger.info('Removed lite-excluded preset providers', { count: toDelete.length })
+        }
       }
     })
   }

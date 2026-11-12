@@ -2,7 +2,6 @@ import { readdirSync, readFileSync } from 'fs'
 import { createRequire } from 'node:module'
 import { join, resolve } from 'path'
 
-import { sentryVitePlugin } from '@sentry/vite-plugin'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import react from '@vitejs/plugin-react'
@@ -21,11 +20,6 @@ import { claudeCodeBinaryManifest } from './scripts/claudeCodeBinaryManifest'
 import { uiContractPlugin } from './scripts/uiContract/vitePlugin'
 import { APP_EDITIONS, type AppEdition } from './src/shared/types/appEdition'
 import { parseReleaseHistory, validateCurrentReleaseHistory } from './src/shared/utils/releaseNotes'
-import { getSentryBuildContext } from './src/shared/utils/sentry'
-
-const { buildSelectionPanel, sourcePath: selectionPanelSource } = createRequire(import.meta.url)(
-  './native/selection-panel/build'
-)
 
 const { buildExternalApp, sourceFiles: externalAppSources } = createRequire(import.meta.url)(
   './native/external-app/build.cjs'
@@ -57,19 +51,6 @@ const visualizerPlugin = (type: 'renderer' | 'main') => {
 const isDev = process.env.NODE_ENV === 'development'
 const isProd = process.env.NODE_ENV === 'production'
 
-const SENTRY_UPLOAD_ENV_KEYS = ['SENTRY_AUTH_TOKEN', 'SENTRY_ORG', 'SENTRY_PROJECT'] as const
-
-export function resolveSentryBuildSettings(env: NodeJS.ProcessEnv) {
-  const sourceMapUploadEnabled = env.NODE_ENV === 'production' && env.SENTRY_SOURCE_MAP_UPLOAD === 'true'
-  const missingUploadEnv = sourceMapUploadEnabled ? SENTRY_UPLOAD_ENV_KEYS.filter((key) => !env[key]?.trim()) : []
-
-  if (missingUploadEnv.length > 0) {
-    throw new Error(`Sentry production builds require: ${missingUploadEnv.join(', ')}`)
-  }
-
-  return { sourceMapUploadEnabled }
-}
-
 export function resolveRendererEdition(value: string | undefined): AppEdition {
   const edition = value?.trim().toLowerCase() || 'global'
   if (APP_EDITIONS.includes(edition as AppEdition)) return edition as AppEdition
@@ -77,27 +58,6 @@ export function resolveRendererEdition(value: string | undefined): AppEdition {
 }
 
 const rendererEdition = resolveRendererEdition(process.env.CHERRY_EDITION)
-const sentryBuildContext = getSentryBuildContext(pkg.name, pkg.version, rendererEdition)
-const { sourceMapUploadEnabled } = resolveSentryBuildSettings(process.env)
-const sentrySourceMap = sourceMapUploadEnabled ? ('hidden' as const) : isDev
-const sentrySourceMapPlugins = (outputDirectory: 'main' | 'preload' | 'renderer') =>
-  sourceMapUploadEnabled
-    ? sentryVitePlugin({
-        authToken: process.env.SENTRY_AUTH_TOKEN,
-        org: process.env.SENTRY_ORG,
-        project: process.env.SENTRY_PROJECT,
-        telemetry: false,
-        release: {
-          name: sentryBuildContext.release,
-          create: false,
-          finalize: false,
-          setCommits: false
-        },
-        sourcemaps: {
-          filesToDeleteAfterUpload: `./out/${outputDirectory}/**/*.map`
-        }
-      })
-    : []
 
 // `dependencies` stay external and ship whole; everything else is bundled. Only R1–R4 packages
 // belong there: see "Main-Process Dependencies" in CLAUDE.md.
@@ -185,13 +145,6 @@ export default defineConfig({
     },
     plugins: [
       {
-        name: 'cherry-selection-panel',
-        buildStart() {
-          this.addWatchFile(selectionPanelSource)
-          buildSelectionPanel()
-        }
-      },
-      {
         name: 'cherry-external-app',
         apply: 'build',
         buildStart() {
@@ -201,8 +154,7 @@ export default defineConfig({
       },
       chunkExportGuardPlugin(),
       miniAppThemeAssetPlugin(),
-      ...visualizerPlugin('main'),
-      ...sentrySourceMapPlugins('main')
+      ...visualizerPlugin('main')
     ],
     resolve: {
       alias: [
@@ -233,14 +185,14 @@ export default defineConfig({
           warn(warning)
         }
       },
-      sourcemap: sentrySourceMap
+      sourcemap: isDev
     },
     optimizeDeps: {
       noDiscovery: isDev
     }
   },
   preload: {
-    plugins: [...sentrySourceMapPlugins('preload')],
+    plugins: [],
     resolve: {
       alias: {
         '@shared': resolve('src/shared'),
@@ -251,7 +203,7 @@ export default defineConfig({
     build: {
       externalizeDeps: false,
       isolatedEntries: true,
-      sourcemap: sentrySourceMap,
+      sourcemap: isDev,
       rolldownOptions: {
         // Unlike renderer which auto-discovers entries from HTML files,
         // preload requires explicit entry point configuration for multiple scripts
@@ -287,8 +239,7 @@ export default defineConfig({
       tailwindcss(),
       react(),
       ...(isDev ? [CodeInspectorPlugin({ bundler: 'vite' })] : []), // 只在开发环境下启用 CodeInspectorPlugin
-      ...visualizerPlugin('renderer'),
-      ...sentrySourceMapPlugins('renderer')
+      ...visualizerPlugin('renderer')
     ],
     resolve: {
       alias: {
@@ -346,20 +297,14 @@ export default defineConfig({
       format: 'es'
     },
     build: {
-      sourcemap: sentrySourceMap,
+      sourcemap: isDev,
       target: 'esnext', // for build
       rolldownOptions: {
         input: {
           index: resolve(__dirname, 'src/renderer/windows/main/index.html'),
-          quickAssistant: resolve(__dirname, 'src/renderer/windows/quickAssistant/index.html'),
-          selectionToolbar: resolve(__dirname, 'src/renderer/windows/selection/toolbar/index.html'),
-          selectionAction: resolve(__dirname, 'src/renderer/windows/selection/action/index.html'),
-          selectionAgent: resolve(__dirname, 'src/renderer/windows/selection/agent/index.html'),
-          selectionCapsule: resolve(__dirname, 'src/renderer/windows/selection/capsule/index.html'),
           migrationV2: resolve(__dirname, 'src/renderer/windows/migrationV2/index.html'),
           userDataRelocation: resolve(__dirname, 'src/renderer/windows/userDataRelocation/index.html'),
-          subWindow: resolve(__dirname, 'src/renderer/windows/subWindow/index.html'),
-          screenshot: resolve(__dirname, 'src/renderer/windows/screenshot/index.html')
+          subWindow: resolve(__dirname, 'src/renderer/windows/subWindow/index.html')
         },
         onwarn(warning, warn) {
           if (warning.code === 'COMMONJS_VARIABLE_IN_ESM') return

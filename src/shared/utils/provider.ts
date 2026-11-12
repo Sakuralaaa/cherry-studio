@@ -139,18 +139,6 @@ export function canManageProvider(provider: Provider): boolean {
 }
 
 /**
- * Providers whose API key is obtained via a hosted OAuth "get key" flow (the
- * `OauthButton`), keyed by runtime id. Single source of truth: `OauthButton`
- * supplies one handler per id (a missing handler is a compile error there), and
- * `isProviderSupportAuth` gates whether the button renders.
- */
-export const API_KEY_OAUTH_PROVIDER_IDS = ['302ai', 'silicon', 'aihubmix', 'ppio', 'aionly', 'tokendance'] as const
-
-export function isProviderSupportAuth(provider: Pick<Provider, 'id'>): boolean {
-  return (API_KEY_OAUTH_PROVIDER_IDS as readonly string[]).includes(provider.id)
-}
-
-/**
  * Login-based providers authenticate via a sign-in flow (CLI login / hosted
  * OAuth) and accept no user API key, so the generic API-key/host UI is
  * suppressed and their sign-in panel renders through the provider registry

@@ -49,14 +49,6 @@ function getConversationSearchParamFromUrl(url: string, name: string): string | 
  */
 const SIDEBAR_APP_DEFINITIONS = [
   {
-    id: 'agents',
-    routePrefix: '/app/agents',
-    conversationRoute: {
-      keyFromUrl: (url) => getConversationSearchParamFromUrl(url, CONVERSATION_ROUTES.agent.keyParam),
-      urlForKey: (key) => conversationRouteUrl({ conversationType: 'agent', conversationId: key })
-    }
-  },
-  {
     id: 'assistants',
     // `routePrefix` must stay a string literal — the knowledge-manifest generator reads it
     // with ts-morph. `conversationRoute` below carries the same path from the shared contract.
@@ -67,38 +59,17 @@ const SIDEBAR_APP_DEFINITIONS = [
     }
   },
   {
-    id: 'scheduled_tasks',
-    routePrefix: '/app/scheduled-tasks'
-  },
-  {
     id: 'paintings',
     routePrefix: '/app/paintings',
     resolveUrl: ({ defaultPaintingProvider }) => `/app/paintings/${defaultPaintingProvider}`
-  },
-  {
-    id: 'marketplace',
-    routePrefix: '/app/marketplace'
   },
   {
     id: 'translate',
     routePrefix: '/app/translate'
   },
   {
-    id: 'mini_app',
-    routePrefix: '/app/mini-app',
-    exactRouteFocus: true
-  },
-  {
     id: 'knowledge',
     routePrefix: '/app/knowledge'
-  },
-  {
-    id: 'files',
-    routePrefix: '/app/files'
-  },
-  {
-    id: 'code_tools',
-    routePrefix: '/app/code'
   },
   {
     id: 'notes',
@@ -119,8 +90,8 @@ const SIDEBAR_APP_BY_ID: Record<SidebarAppId, SidebarApp> = SIDEBAR_APPS.reduce(
   {} as Record<SidebarAppId, SidebarApp>
 )
 
-export function getSidebarApp(id: SidebarAppId): SidebarApp | undefined {
-  return SIDEBAR_APP_BY_ID[id]
+export function getSidebarApp(id: SidebarFavorite): SidebarApp | undefined {
+  return SIDEBAR_APP_BY_ID[id as SidebarAppId]
 }
 
 /**
@@ -128,7 +99,8 @@ export function getSidebarApp(id: SidebarAppId): SidebarApp | undefined {
  * or a query-param instance of it. Shared by the sidebar dispatcher and the
  * conversation-navigation boundary so the matcher lives in exactly one place.
  */
-export function tabBelongsToApp(app: SidebarApp, url: string): boolean {
+export function tabBelongsToApp(app: SidebarApp | undefined, url: string): boolean {
+  if (!app) return false
   return url === app.routePrefix || url.startsWith(`${app.routePrefix}/`) || url.startsWith(`${app.routePrefix}?`)
 }
 
@@ -136,23 +108,12 @@ export function tabBelongsToApp(app: SidebarApp, url: string): boolean {
  * 侧边栏支持的完整菜单顺序。
  * Preference 默认值可能不包含新菜单，管理态列表仍需要覆盖当前全部支持项。
  */
-// Lite edition: only conversation apps can be pinned or shown; the registry itself stays intact.
-const LITE_SIDEBAR_APP_IDS: ReadonlySet<SidebarAppId> = new Set<SidebarAppId>([
-  'assistants',
-  'paintings',
-  'translate',
-  'knowledge',
-  'notes'
-])
-
-/** Lite edition: whether a core app may appear in the sidebar. */
+/** Whether an app id belongs to the (lite) sidebar registry. */
 export function isLiteSidebarApp(id: string): boolean {
-  return LITE_SIDEBAR_APP_IDS.has(id as SidebarAppId)
+  return SIDEBAR_APP_BY_ID[id as SidebarAppId] !== undefined
 }
 
-export const SIDEBAR_FAVORITE_ORDER: SidebarAppId[] = SIDEBAR_APPS.map((app) => app.id).filter((id) =>
-  LITE_SIDEBAR_APP_IDS.has(id)
-)
+export const SIDEBAR_FAVORITE_ORDER: SidebarAppId[] = SIDEBAR_APPS.map((app) => app.id)
 
 const sidebarFavoriteSet = new Set<SidebarAppId>(SIDEBAR_FAVORITE_ORDER)
 
@@ -183,7 +144,17 @@ export const SIDEBAR_SHORTCUT_PROVIDER_IDS = {
   CODE_CLI: 'core.code-cli'
 } as const
 
-const RETIRED_SIDEBAR_SHORTCUT_PROVIDER_IDS = new Set(['core.skill', 'core.mcp-server', 'core.provider'])
+// Lite edition: mini apps, agents, agent sessions, files and code CLIs are removed; drop their pins.
+const RETIRED_SIDEBAR_SHORTCUT_PROVIDER_IDS = new Set([
+  'core.skill',
+  'core.mcp-server',
+  'core.provider',
+  SIDEBAR_SHORTCUT_PROVIDER_IDS.MINI_APP,
+  SIDEBAR_SHORTCUT_PROVIDER_IDS.AGENT,
+  SIDEBAR_SHORTCUT_PROVIDER_IDS.AGENT_SESSION,
+  SIDEBAR_SHORTCUT_PROVIDER_IDS.FILE_ENTRY,
+  SIDEBAR_SHORTCUT_PROVIDER_IDS.CODE_CLI
+])
 
 export function createSidebarShortcutTarget(
   providerId: string,
@@ -328,16 +299,7 @@ export function addSidebarShortcut(
   const items = normalizeSidebarShortcutItems(values)
   const id = createSidebarShortcutId(target)
   if (items.some((item) => isSidebarShortcutItem(item) && item.id === id)) return items
-  const chatIndex =
-    isBuiltInAppShortcutTarget(target) && target.locator.resourceId === 'scheduled_tasks'
-      ? items.findIndex(
-          (item) =>
-            isSidebarShortcutItem(item) &&
-            isBuiltInAppShortcutTarget(item.target) &&
-            item.target.locator.resourceId === 'assistants'
-        )
-      : -1
-  const insertIndex = chatIndex === -1 ? items.length : chatIndex + 1
+  const insertIndex = items.length
   return [
     ...items.slice(0, insertIndex),
     {
@@ -429,11 +391,7 @@ export function getOrderedLaunchpadApps(stored: readonly string[] | undefined): 
   for (const id of SIDEBAR_FAVORITE_ORDER) {
     if (!seen.has(id)) {
       seen.add(id)
-      if (id === 'marketplace' && ordered.includes('paintings')) {
-        ordered.splice(ordered.indexOf('paintings') + 1, 0, id)
-      } else {
-        ordered.push(id)
-      }
+      ordered.push(id)
     }
   }
 

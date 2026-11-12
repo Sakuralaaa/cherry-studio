@@ -22,7 +22,6 @@ import * as z from 'zod'
 import { loggerService } from '@logger'
 import { providerRegistryService } from '@main/data/services/ProviderRegistryService'
 import { providerService } from '@main/data/services/ProviderService'
-import { copilotService } from '@main/services/CopilotService'
 import { mergeHeaders } from '@main/utils/http'
 import type { EndpointType, ListedModels, Model } from '@shared/data/types/model'
 import {
@@ -52,7 +51,6 @@ import {
   getProviderAppHeaders,
   headersWithoutCredentials
 } from '../utils/provider'
-import { COPILOT_DEFAULT_HEADERS } from './constants'
 import { listWorkflows } from './custom/comfyui/comfyuiWorkflowDiscovery'
 import { partitionListableWorkflows } from './custom/comfyui/comfyuiWorkflows'
 import {
@@ -65,7 +63,6 @@ import {
 import {
   AIHubMixModelsResponseSchema,
   AnthropicModelsResponseSchema,
-  CopilotModelsResponseSchema,
   GeminiModelsResponseSchema,
   LMStudioModelsResponseSchema,
   NewApiModelsResponseSchema,
@@ -468,34 +465,6 @@ const vertexFetcher: ModelFetcher = {
     }
 
     return listing(filteredModels)
-  }
-}
-
-const copilotFetcher: ModelFetcher = {
-  match: (p) => matchesPreset(p, SystemProviderIds.copilot),
-  fetch: async (provider, signal) => {
-    const copilotHeaders = mergeHeaders(COPILOT_DEFAULT_HEADERS, provider.settings.extraHeaders)
-    // getToken exchanges the stored GitHub OAuth token for a Copilot session token.
-    // It must NOT carry the provider's `Authorization: Bearer <apiKey>` (added by
-    // defaultHeaders) — GitHub's token endpoint rejects the conflicting header with 401.
-    const { token } = await copilotService.getToken(null as any, copilotHeaders)
-    const response = await getFromApi({
-      url: `${withoutTrailingSlash(getBaseUrl(provider, ENDPOINT_TYPE.OPENAI_CHAT_COMPLETIONS))}/models`,
-      headers: mergeHeaders(copilotHeaders, { Authorization: `Bearer ${token}` }),
-      responseSchema: CopilotModelsResponseSchema,
-      abortSignal: signal
-    })
-
-    const filtered = response.data.filter((m) => {
-      const modelId = m.id.toLowerCase()
-      return (
-        m.policy?.state !== 'disabled' &&
-        !/^accounts\/[^/]+\/routers\//.test(modelId) &&
-        !/^(tts|whisper|speech)/.test(modelId.split('/').pop() || '')
-      )
-    })
-
-    return listing(dedup(filtered, (m) => m.id).map((m) => toModel(m.id, provider, { ownedBy: m.owned_by })))
   }
 }
 
@@ -1227,7 +1196,6 @@ const fetchers: ModelFetcher[] = [
   omlxFetcher,
   geminiFetcher,
   vertexFetcher,
-  copilotFetcher,
   ovmsFetcher,
   comfyuiFetcher,
   togetherFetcher,

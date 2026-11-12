@@ -2,7 +2,6 @@ import { Activity, type CSSProperties, useCallback, useEffect, useRef } from 're
 
 import { WindowFrameProvider } from '@renderer/components/chat/shell/WindowFrameContext'
 import { TabRouter } from '@renderer/components/layout/TabRouter'
-import MiniAppTabsPool from '@renderer/components/MiniApp/MiniAppTabsPool'
 import { ResourceViewSourceProvider } from '@renderer/components/ResourceViewSourceProvider'
 import { WINDOW_CONTROLS_OVERLAY_WIDTH } from '@renderer/components/WindowControls'
 import { useCommandHandler } from '@renderer/hooks/command'
@@ -111,7 +110,6 @@ export const SubWindowAppShell = () => {
             ))}
 
           {/* Keep window-local guests outside route Activities so page dormancy does not release them. */}
-          <MiniAppTabsPool />
         </main>
       </div>
     </WindowFrameProvider>

@@ -51,13 +51,14 @@ export const appHandlers: IpcHandlersFor<typeof appRequestSchemas> = {
   },
   'app.data_reset.request': async () => requestDataReset(),
   'app.migration_v2.rerun': async () => requestV1Remigration(),
-  'app.updater.check_for_update': async () => {
-    await application.get('AppUpdaterService').checkForUpdates()
-  },
-  'app.updater.release_notes.get': async () => application.get('AppUpdaterService').getReleaseHistory(),
-  'app.updater.upgrade_notes.get': async ({ targetVersion }) =>
-    application.get('AppUpdaterService').getUpgradeReleaseNotes(targetVersion),
-  'app.updater.quit_and_install': async () => {
-    application.get('AppUpdaterService').quitAndInstall()
-  }
+  // Lite edition: auto-update is removed — no update checks and no official update feed.
+  'app.updater.check_for_update': async () => {},
+  'app.updater.release_notes.get': async () => null,
+  'app.updater.upgrade_notes.get': async ({ targetVersion }) => ({
+    fromVersion: app.getVersion(),
+    toVersion: targetVersion,
+    historyStatus: 'unavailable' as const,
+    releases: []
+  }),
+  'app.updater.quit_and_install': async () => {}
 }

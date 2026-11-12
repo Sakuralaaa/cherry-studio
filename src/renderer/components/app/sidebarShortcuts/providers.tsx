@@ -1,15 +1,9 @@
-import { renderAgentEntityIcon, renderAssistantEntityIcon } from '@renderer/components/chat/resourceList/base'
-import { CLI_TOOLS, CliIcon } from '@renderer/components/icons/CliIcon'
-import MiniAppIcon from '@renderer/components/icons/MiniAppIcon'
+import { renderAssistantEntityIcon } from '@renderer/components/chat/resourceList/base'
 import { dataApiService } from '@renderer/data/DataApiService'
 import { preferenceService } from '@renderer/data/PreferenceService'
 import { getSidebarIconLabelKey } from '@renderer/i18n/label'
 import i18n from '@renderer/i18n/resolver'
-import {
-  resolveAgentEntrySessionIdForAgent,
-  resolveChatEntryTopicIdForAssistant
-} from '@renderer/utils/conversationEntry'
-import { miniAppIdFromTabUrl } from '@renderer/utils/miniAppKeepAlive'
+import { resolveChatEntryTopicIdForAssistant } from '@renderer/utils/conversationEntry'
 import {
   getSidebarApp,
   getSidebarMenuPath,
@@ -18,14 +12,11 @@ import {
   tabBelongsToApp
 } from '@renderer/utils/sidebar'
 import { createSidebarShortcutId, type SidebarShortcutTarget } from '@shared/data/preference/preferenceTypes'
-import { FileEntryIdSchema } from '@shared/data/types/file'
-import { CodeCli } from '@shared/types/codeCli'
 
 import { SidebarIcon } from '../sidebarIcons'
 import type { ResolvedShortcut, SidebarShortcutProvider } from './types'
 
 const REVEAL_ACTIVATIONS = new Set<string | undefined>([undefined, 'reveal'])
-const CODE_CLI_TOOL_BY_ID = new Map<string, (typeof CLI_TOOLS)[number]>(CLI_TOOLS.map((tool) => [tool.value, tool]))
 
 function validates(providerId: string, target: SidebarShortcutTarget): boolean {
   return (
@@ -151,76 +142,6 @@ const appProvider: SidebarShortcutProvider = {
   }
 }
 
-const miniAppProvider: SidebarShortcutProvider = {
-  id: SIDEBAR_SHORTCUT_PROVIDER_IDS.MINI_APP,
-  validate: (target) => validates(SIDEBAR_SHORTCUT_PROVIDER_IDS.MINI_APP, target),
-  async resolveMany(targets) {
-    const miniApps = await dataApiService.get('/mini-apps')
-    return mapRequested(
-      targets,
-      miniApps,
-      (app) => app.appId,
-      (app) => ({
-        label: app.nameKey ? i18n.t(app.nameKey) : app.name,
-        renderIcon: ({ slotSize, glyphSize, active }) =>
-          app.logo || app.logoSrc ? (
-            <MiniAppIcon app={app} appearance="sidebar" size={slotSize} />
-          ) : (
-            <SidebarIcon icon="miniApp" active={active} size={glyphSize} strokeWidth={1.6} />
-          ),
-        tabIcon: app.logoSrc ?? app.logo,
-        supportsNewTab: true
-      })
-    )
-  },
-  subscribe: localizedCollectionSubscription('/mini-apps'),
-  activate(target, gateway) {
-    if (!this.validate(target)) return
-    const id = target.locator.resourceId
-    gateway.openWorkspace({ url: `/app/mini-app/${encodeURIComponent(id)}`, title: id })
-  },
-  isActive: (target, navigation) => miniAppIdFromTabUrl(navigation.url) === target.locator.resourceId
-}
-
-const agentProvider: SidebarShortcutProvider = {
-  id: SIDEBAR_SHORTCUT_PROVIDER_IDS.AGENT,
-  validate: (target) => validates(SIDEBAR_SHORTCUT_PROVIDER_IDS.AGENT, target),
-  async resolveMany(targets) {
-    const [iconType, defaultModelId] = await Promise.all([
-      preferenceService.get('agent.icon_type'),
-      preferenceService.get('chat.default_model_id')
-    ])
-    return resolvePaginatedTargets(
-      targets,
-      500,
-      (ids) => dataApiService.get('/agents', { query: { ids, limit: ids.length } }),
-      (agent) => agent.id,
-      (agent) => ({
-        label: agent.name,
-        renderIcon: ({ slotSize }) =>
-          renderAgentEntityIcon(iconType === 'none' ? 'emoji' : iconType, agent, defaultModelId, slotSize),
-        supportsNewTab: true
-      })
-    )
-  },
-  subscribe: resourceIconSubscription('/agents', 'agent.icon_type'),
-  async activate(target, gateway) {
-    if (!this.validate(target)) return
-    const sessionId = await resolveAgentEntrySessionIdForAgent(target.locator.resourceId)
-    gateway.openWorkspace({
-      url: sessionId
-        ? getSidebarApp('agents')!.conversationRoute!.urlForKey(sessionId)
-        : `/app/agents?agentId=${encodeURIComponent(target.locator.resourceId)}`,
-      conversation: sessionId ? { conversationType: 'agent', conversationId: sessionId } : undefined,
-      title: target.locator.resourceId,
-      metadata: { agentPinPending: true }
-    })
-  },
-  isActive: (target, navigation) =>
-    navigation.agentId === target.locator.resourceId ||
-    isActiveResourceUrl(navigation.url, '/app/agents', 'agentId', target.locator.resourceId)
-}
-
 const assistantProvider: SidebarShortcutProvider = {
   id: SIDEBAR_SHORTCUT_PROVIDER_IDS.ASSISTANT,
   validate: (target) => validates(SIDEBAR_SHORTCUT_PROVIDER_IDS.ASSISTANT, target),
@@ -324,111 +245,11 @@ const topicProvider: SidebarShortcutProvider = {
     isActiveResourceUrl(navigation.url, '/app/chat', 'topicId', target.locator.resourceId)
 }
 
-const agentSessionProvider: SidebarShortcutProvider = {
-  id: SIDEBAR_SHORTCUT_PROVIDER_IDS.AGENT_SESSION,
-  validate: (target) => validates(SIDEBAR_SHORTCUT_PROVIDER_IDS.AGENT_SESSION, target),
-  resolveMany: (targets) =>
-    resolvePaginatedTargets(
-      targets,
-      200,
-      (ids) => dataApiService.get('/agent-sessions', { query: { ids, limit: ids.length } }),
-      (session) => session.id,
-      (session) => ({
-        label: session.name.trim() || i18n.t('agent.session.new'),
-        renderIcon: ({ glyphSize, active }) => (
-          <SidebarIcon icon="agentSession" active={active} size={glyphSize} strokeWidth={1.6} />
-        ),
-        supportsNewTab: true
-      })
-    ),
-  subscribe: localizedCollectionSubscription('/agent-sessions'),
-  activate(target, gateway) {
-    if (!this.validate(target)) return
-    gateway.openWorkspace({
-      url: `/app/agents?sessionId=${encodeURIComponent(target.locator.resourceId)}`,
-      conversation: { conversationType: 'agent', conversationId: target.locator.resourceId },
-      title: target.locator.resourceId
-    })
-  },
-  isActive: (target, navigation) =>
-    isActiveResourceUrl(navigation.url, '/app/agents', 'sessionId', target.locator.resourceId)
-}
-
-const fileEntryProvider: SidebarShortcutProvider = {
-  id: SIDEBAR_SHORTCUT_PROVIDER_IDS.FILE_ENTRY,
-  validate: (target) =>
-    validates(SIDEBAR_SHORTCUT_PROVIDER_IDS.FILE_ENTRY, target) &&
-    FileEntryIdSchema.safeParse(target.locator.resourceId).success,
-  resolveMany: (targets) =>
-    resolvePaginatedTargets(
-      targets,
-      100,
-      (ids) => dataApiService.get('/files/entries', { query: { ids, limit: ids.length } }),
-      (entry) => entry.id,
-      (entry) => ({
-        label: entry.ext ? `${entry.name}.${entry.ext}` : entry.name,
-        renderIcon: ({ glyphSize, active }) => (
-          <SidebarIcon icon="fileEntry" active={active} size={glyphSize} strokeWidth={1.6} />
-        ),
-        supportsNewTab: true
-      })
-    ),
-  subscribe: collectionSubscription('/files/entries'),
-  activate(target, gateway) {
-    if (!this.validate(target)) return
-    gateway.openWorkspace({
-      url: `/app/files?entryId=${encodeURIComponent(target.locator.resourceId)}`,
-      title: target.locator.resourceId
-    })
-  },
-  isActive: (target, navigation) =>
-    isActiveResourceUrl(navigation.url, '/app/files', 'entryId', target.locator.resourceId)
-}
-
-const codeCliProvider: SidebarShortcutProvider = {
-  id: SIDEBAR_SHORTCUT_PROVIDER_IDS.CODE_CLI,
-  validate: (target) =>
-    validates(SIDEBAR_SHORTCUT_PROVIDER_IDS.CODE_CLI, target) && CODE_CLI_TOOL_BY_ID.has(target.locator.resourceId),
-  async resolveMany(targets) {
-    return mapRequested(
-      targets,
-      CLI_TOOLS,
-      (tool) => tool.value,
-      (tool) => ({
-        label: i18n.t(tool.label),
-        renderIcon: ({ slotSize, glyphSize }) => (
-          <CliIcon id={tool.value} size={tool.value === CodeCli.PI ? glyphSize : slotSize} />
-        ),
-        supportsNewTab: true
-      })
-    )
-  },
-  subscribe: (_targets, invalidate) => languageSubscription(invalidate),
-  activate(target, gateway) {
-    if (!this.validate(target)) return
-    const tool = CODE_CLI_TOOL_BY_ID.get(target.locator.resourceId)
-    if (!tool) return
-    const isActiveToolUrl = (url: string) => isActiveResourceUrl(url, '/app/code', 'tool', tool.value)
-    gateway.openWorkspace({
-      url: `/app/code?tool=${encodeURIComponent(tool.value)}`,
-      title: i18n.t(tool.label),
-      matchesCurrent: isActiveToolUrl,
-      matchesTab: isActiveToolUrl
-    })
-  },
-  isActive: (target, navigation) => isActiveResourceUrl(navigation.url, '/app/code', 'tool', target.locator.resourceId)
-}
-
 export const CORE_SIDEBAR_SHORTCUT_PROVIDERS: readonly SidebarShortcutProvider[] = [
   appProvider,
-  miniAppProvider,
-  agentProvider,
   assistantProvider,
   knowledgeBaseProvider,
-  topicProvider,
-  agentSessionProvider,
-  fileEntryProvider,
-  codeCliProvider
+  topicProvider
 ]
 function resourceIconSubscription(
   endpoint: '/agents' | '/assistants',

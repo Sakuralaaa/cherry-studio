@@ -17,15 +17,11 @@ import { serviceList } from '@main/core/application/serviceRegistry'
 // Preboot phase — order matters. See core/preboot/README.md.
 import { prepareBackupRestoreSession, runBackupRestoreGate } from '@main/core/preboot/backupRestoreGate'
 import { configureChromiumFlags } from '@main/core/preboot/chromiumFlags'
-import { initCrashTelemetry } from '@main/core/preboot/crashTelemetry'
 import { requireSingleInstance } from '@main/core/preboot/singleInstance'
 import { resolveUserDataLocation } from '@main/core/preboot/userDataLocation'
 import { runV2MigrationGate } from '@main/core/preboot/v2MigrationGate'
-import { MINI_APP_SCHEME_DECLARATION } from '@main/features/miniApp/runtime/protocol'
 import { runDataReset } from '@main/services/dataReset'
 import { CHERRY_MEDIA_SCHEME_DECLARATION } from '@main/services/mediaProtocol'
-import { configureRemoteDebugging } from '@main/services/remoteDebugging'
-import { initSentry } from '@main/services/sentry'
 import { runUserDataRelocation } from '@main/services/userDataRelocation'
 import { getApplicationId } from '@main/utils/appEdition'
 
@@ -33,15 +29,12 @@ import { getApplicationId } from '@main/utils/appEdition'
 resolveUserDataLocation()
 requireSingleInstance()
 configureChromiumFlags()
-configureRemoteDebugging()
-initCrashTelemetry()
 // Freeze the path registry — bootstrap() asserts this completed.
 application.initPathRegistry()
 const isolatedRestoreSession = prepareBackupRestoreSession()
-initSentry()
 // Privileged schemes must be declared before the app is ready, and only ONCE per
 // process — startApp() itself awaits app.whenReady(), so this cannot move in there.
-protocol.registerSchemesAsPrivileged([CHERRY_MEDIA_SCHEME_DECLARATION, MINI_APP_SCHEME_DECLARATION])
+protocol.registerSchemesAsPrivileged([CHERRY_MEDIA_SCHEME_DECLARATION])
 
 import { app, protocol } from 'electron'
 

@@ -1613,28 +1613,12 @@ export class AiService extends BaseService {
 
   // ── Token usage tracking ──
 
+  // Lite edition: product analytics removed; local usage records are kept by the billing hook.
   private trackUsage(
-    model: Model,
-    usage?: { inputTokens?: number; outputTokens?: number },
-    source: TokenUsageSource = 'chat'
-  ): void {
-    if (!usage || !model.providerId || !model.apiModelId) return
-    const inputTokens = usage.inputTokens ?? 0
-    const outputTokens = usage.outputTokens ?? 0
-
-    try {
-      const analyticsService = application.get('AnalyticsService')
-      analyticsService.trackTokenUsage({
-        provider: model.providerId,
-        model: model.apiModelId ?? model.id,
-        input_tokens: inputTokens,
-        output_tokens: outputTokens,
-        source
-      })
-    } catch {
-      // AnalyticsService may not be activated (data collection disabled)
-    }
-  }
+    _model: Model,
+    _usage?: { inputTokens?: number; outputTokens?: number },
+    _source: TokenUsageSource = 'chat'
+  ): void {}
 
   /** Priority: explicit `uniqueModelId` > `assistant.modelId`. */
   private getProviderAndModel(request: AsInProcess<AiRequest>) {

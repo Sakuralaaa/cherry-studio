@@ -1,23 +1,11 @@
 import { lazy, type ReactNode } from 'react'
 
-import { isClaudeCodeProviderId } from '@shared/data/presets/claudeCode'
-import { isCodexProviderId } from '@shared/data/presets/codex'
-import { isGrokCliProviderId } from '@shared/data/presets/grokCli'
 import type { Provider } from '@shared/data/types/provider'
-import { isAwsBedrockProvider, isProviderSupportAuth, isVertexProvider, matchesPreset } from '@shared/utils/provider'
+import { isAwsBedrockProvider, isVertexProvider, matchesPreset } from '@shared/utils/provider'
 
 import type { useProviderMeta } from '../hooks/providerSetting/useProviderMeta'
 
 const AwsBedrockSettings = lazy(() => import('./AwsBedrockSettings'))
-const CherryInOauth = lazy(() => import('./CherryInOauth'))
-const ClaudeCodeSettings = lazy(() => import('./ClaudeCodeSettings'))
-const DmxapiSettings = lazy(() => import('./DmxapiSettings'))
-const GithubCopilotSettings = lazy(() => import('./GithubCopilotSettings'))
-const GpuStackSettings = lazy(() => import('./GpuStackSettings'))
-const LmStudioSettings = lazy(() => import('./LmStudioSettings'))
-const LoginOauthPanel = lazy(() => import('./LoginOauthPanel'))
-const OvmsSettings = lazy(() => import('./OvmsSettings'))
-const ProviderOauth = lazy(() => import('./ProviderOauth'))
 const VertexAiSettings = lazy(() => import('./VertexAiSettings'))
 const DoubaoSetupGuide = lazy(() => import('./DoubaoSetupGuide'))
 
@@ -37,62 +25,12 @@ export type ProviderSpecificRegistryEntry = {
 export const PROVIDER_SPECIFIC_SETTINGS_REGISTRY: Record<ProviderSpecificPlacement, ProviderSpecificRegistryEntry[]> = {
   beforeAuth: [
     {
-      key: 'oauth',
-      when: ({ provider }) => isProviderSupportAuth(provider),
-      render: (providerId) => <ProviderOauth providerId={providerId} />
-    },
-    {
-      key: 'cherryin-oauth',
-      when: ({ meta }) => meta.isCherryIN,
-      render: (providerId) => <CherryInOauth providerId={providerId} />
-    },
-    {
-      key: 'ovms-settings',
-      when: ({ provider }) => matchesPreset(provider, 'ovms'),
-      render: () => <OvmsSettings />
-    },
-    {
-      key: 'dmxapi-settings',
-      when: ({ meta }) => meta.isDmxapi,
-      render: (providerId) => <DmxapiSettings providerId={providerId} />
-    },
-    {
       key: 'doubao-setup-guide',
       when: ({ provider }) => matchesPreset(provider, 'doubao'),
       render: (providerId) => <DoubaoSetupGuide providerId={providerId} />
-    },
-    {
-      key: 'claude-code-settings',
-      when: ({ provider }) => isClaudeCodeProviderId(provider.id),
-      render: (providerId) => <ClaudeCodeSettings providerId={providerId} />
-    },
-    {
-      key: 'codex-oauth',
-      when: ({ provider }) => isCodexProviderId(provider.id),
-      render: (providerId) => <LoginOauthPanel providerId={providerId} i18nNs="codex" showAccountId />
-    },
-    {
-      key: 'grok-cli-oauth',
-      when: ({ provider }) => isGrokCliProviderId(provider.id),
-      render: (providerId) => <LoginOauthPanel providerId={providerId} i18nNs="grok_cli" />
     }
   ],
   afterAuth: [
-    {
-      key: 'lmstudio-settings',
-      when: ({ provider }) => matchesPreset(provider, 'lmstudio'),
-      render: (providerId) => <LmStudioSettings providerId={providerId} />
-    },
-    {
-      key: 'gpustack-settings',
-      when: ({ provider }) => matchesPreset(provider, 'gpustack'),
-      render: (providerId) => <GpuStackSettings providerId={providerId} />
-    },
-    {
-      key: 'copilot-settings',
-      when: ({ provider }) => matchesPreset(provider, 'copilot'),
-      render: (providerId) => <GithubCopilotSettings providerId={providerId} />
-    },
     {
       key: 'aws-bedrock-settings',
       when: ({ provider }) => isAwsBedrockProvider(provider),
