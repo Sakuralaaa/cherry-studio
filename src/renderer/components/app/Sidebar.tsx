@@ -26,6 +26,7 @@ import { trackSubscriptionEntryView } from '@renderer/services/cherryCloudSubscr
 import { openSettingsTab } from '@renderer/services/mainWindowNavigation'
 import { toast } from '@renderer/services/toast'
 import { isMac } from '@renderer/utils/platform'
+import { isLiteSidebarApp } from '@renderer/utils/sidebar'
 
 import { HelpMenu } from '../layout/HelpMenu'
 import { AppUpdateButton } from '../layout/ShellTabBarActions'
@@ -74,7 +75,16 @@ export default function Sidebar({
   const unreadDescriptionId = useId()
   const showUserInFooter = isMac && !isFullscreen
   const [userName] = usePreference('app.user.name')
-  const { shortcuts, remove, reorder } = useSidebarShortcuts()
+  const { shortcuts: allShortcuts, remove, reorder } = useSidebarShortcuts()
+  // Lite edition: drop pinned core apps that were removed (agents, scheduled tasks, ...).
+  const shortcuts = useMemo(
+    () =>
+      allShortcuts.filter((shortcut) => {
+        const locator = (shortcut.target as { locator?: { providerId?: string; resourceId?: string } }).locator
+        return locator?.providerId !== 'core.app' || isLiteSidebarApp(locator.resourceId ?? '')
+      }),
+    [allShortcuts]
+  )
   const registry = useSidebarShortcutRegistry()
   const resolutions = useResolvedSidebarShortcuts(shortcuts, registry)
   const activateShortcut = useSidebarShortcutActivation()

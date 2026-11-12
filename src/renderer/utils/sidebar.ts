@@ -145,6 +145,11 @@ const LITE_SIDEBAR_APP_IDS: ReadonlySet<SidebarAppId> = new Set<SidebarAppId>([
   'notes'
 ])
 
+/** Lite edition: whether a core app may appear in the sidebar. */
+export function isLiteSidebarApp(id: string): boolean {
+  return LITE_SIDEBAR_APP_IDS.has(id as SidebarAppId)
+}
+
 export const SIDEBAR_FAVORITE_ORDER: SidebarAppId[] = SIDEBAR_APPS.map((app) => app.id).filter((id) =>
   LITE_SIDEBAR_APP_IDS.has(id)
 )
